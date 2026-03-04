@@ -1,3 +1,4 @@
+import path from 'path';
 import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
@@ -37,7 +38,11 @@ export function createApp(deps: AppDeps) {
   const app = express();
 
   // Global middleware (order matters)
-  app.use(helmet());
+  app.use(
+    helmet({
+      contentSecurityPolicy: process.env.NODE_ENV === 'production' ? false : undefined,
+    }),
+  );
   app.use(
     cors({
       origin: deps.corsOrigins.split(',').map((s) => s.trim()),
@@ -134,8 +139,20 @@ export function createApp(deps: AppDeps) {
   app.use('/api/v1/reports', reportsRouter);
   app.get('/api/v1/projects/:id/financials', financialsController.getProjectFinancials);
 
+  // ---------- Production: serve frontend static files ----------
+  if (process.env.NODE_ENV === 'production') {
+    const webDist = path.resolve(__dirname, '../../web/dist');
+    app.use(express.static(webDist));
+    // SPA fallback: any non-API route serves index.html
+    app.get('*', (_req, res) => {
+      res.sendFile(path.join(webDist, 'index.html'));
+    });
+  } else {
+    // Dev: 404 for non-API routes
+    app.use(notFound);
+  }
+
   // Error handling (must be last)
-  app.use(notFound);
   app.use(errorHandler);
 
   return app;
