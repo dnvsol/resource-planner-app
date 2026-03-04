@@ -229,7 +229,7 @@ type PeriodKey = 'week' | 'month' | 'quarter' | 'half' | 'year';
 const PERIODS: { key: PeriodKey; label: string; days: number; granularity: 'day' | 'week' }[] = [
   { key: 'week', label: 'Week', days: 7, granularity: 'day' },
   { key: 'month', label: 'Month', days: 35, granularity: 'day' },
-  { key: 'quarter', label: 'Quarter', days: 91, granularity: 'day' },
+  { key: 'quarter', label: 'Quarter', days: 91, granularity: 'week' },
   { key: 'half', label: 'Half Year', days: 182, granularity: 'week' },
   { key: 'year', label: 'Year', days: 365, granularity: 'week' },
 ];
@@ -976,7 +976,7 @@ export function ProjectsPlannerView() {
   const [displayUnit, setDisplayUnit] = useState<DisplayUnit>('hours_day');
   const [showTotalEffort, setShowTotalEffort] = useState(false);
   const [alwaysShowPhases, setAlwaysShowPhases] = useState(false);
-  const [showWeekends, setShowWeekends] = useState(true);
+  const [showWeekends, setShowWeekends] = useState(false);
   const [effortView, setEffortView] = useState<EffortView>('hours');
   const [showPeriodMenu, setShowPeriodMenu] = useState(false);
   const [showFilterMenu, setShowFilterMenu] = useState(false);
@@ -987,6 +987,22 @@ export function ProjectsPlannerView() {
   const [personMenu, setPersonMenu] = useState<string | null>(null);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const [addPersonProject, setAddPersonProject] = useState<Project | null>(null);
+
+  // Dynamic column width — stretch to fill container
+  const [containerWidth, setContainerWidth] = useState(0);
+  const timelineContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = timelineContainerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setContainerWidth(entry.contentRect.width);
+      }
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   // Filter state
   const [activeFilters, setActiveFilters] = useState<ActiveFilter[]>([]);
@@ -1239,7 +1255,11 @@ export function ProjectsPlannerView() {
     return cols;
   }, [startDate, numDays, periodCfg.granularity, showWeekends]);
 
-  const colWidth = periodCfg.granularity === 'week' ? WEEK_COL_WIDTH : DAY_WIDTH;
+  // Dynamic column width: stretch to fill container, with minimum sizes
+  const minColWidth = periodCfg.granularity === 'week' ? WEEK_COL_WIDTH : DAY_WIDTH;
+  const colWidth = columns.length > 0 && containerWidth > 0
+    ? Math.max(containerWidth / columns.length, minColWidth)
+    : minColWidth;
   const timelineWidth = columns.length * colWidth;
 
   // Bar position helper — works for both day and week granularity
@@ -1972,7 +1992,7 @@ export function ProjectsPlannerView() {
         </div>
 
         {/* Right panel: Timeline */}
-        <div className="flex flex-1 flex-col overflow-hidden">
+        <div ref={timelineContainerRef} className="flex flex-1 flex-col overflow-hidden">
           {/* Timeline header */}
           <div
             ref={timelineHeaderRef}
