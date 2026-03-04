@@ -11,6 +11,7 @@ import {
   useTeams,
   useRoles,
   useLeaves,
+  useAssignments,
 } from '@/shared/api/hooks';
 import type {
   PersonDetail,
@@ -22,6 +23,7 @@ import type {
 import { Button } from '@/shared/components/ui/Button';
 import { WorkDayBadges } from '@/shared/components/ui/WorkDayBadges';
 import { ThreeDotMenu } from '@/shared/components/ui/ThreeDotMenu';
+import { NotesPanel } from '@/shared/components/NotesPanel';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -82,11 +84,65 @@ function SnapshotTab({
   const threeWeeksLater = new Date(now);
   threeWeeksLater.setDate(threeWeeksLater.getDate() + 21);
   const rangeLabel = `${now.toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' })} - ${threeWeeksLater.toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' })}`;
+  const startISO = now.toISOString().slice(0, 10);
+  const endISO = threeWeeksLater.toISOString().slice(0, 10);
 
   const skills = person.skills ?? [];
-
-  // Active contract info
   const activeContract = (person as any).activeContract as Contract | undefined;
+
+  // Fetch assignments and leaves for KPI calculations
+  const { data: assignmentsRes } = useAssignments({ personId: person.id });
+  const { data: leavesRes } = useLeaves({ personId: person.id });
+
+  const assignments = assignmentsRes?.data ?? [];
+  const leaves = leavesRes?.data ?? [];
+
+  // Compute KPIs for the 4-week window
+  const kpis = useMemo(() => {
+    // Filter assignments in range
+    const rangeAssignments = assignments.filter(
+      (a) => a.startDate <= endISO && a.endDate >= startISO,
+    );
+    // Filter leaves in range
+    const rangeLeaves = leaves.filter(
+      (l) => l.startDate <= endISO && l.endDate >= startISO,
+    );
+
+    // Work assigned (total hours in window)
+    let totalWorkHours = 0;
+    for (const a of rangeAssignments) {
+      const aStart = a.startDate > startISO ? a.startDate : startISO;
+      const aEnd = a.endDate < endISO ? a.endDate : endISO;
+      const days = Math.max(1, Math.ceil((new Date(aEnd).getTime() - new Date(aStart).getTime()) / (1000 * 60 * 60 * 24)) + 1);
+      // Approximate weekdays: 5/7 of days
+      const weekdays = Math.round(days * 5 / 7);
+      totalWorkHours += weekdays * (a.minutesPerDay / 60);
+    }
+
+    // Time off (days in window)
+    let timeOffDays = 0;
+    for (const l of rangeLeaves) {
+      const lStart = l.startDate > startISO ? l.startDate : startISO;
+      const lEnd = l.endDate < endISO ? l.endDate : endISO;
+      const days = Math.max(1, Math.ceil((new Date(lEnd).getTime() - new Date(lStart).getTime()) / (1000 * 60 * 60 * 24)) + 1);
+      timeOffDays += Math.round(days * 5 / 7);
+    }
+
+    // Capacity (weekdays in window * hours/day from contract)
+    const totalDays = Math.ceil((threeWeeksLater.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    const weekdays = Math.round(totalDays * 5 / 7);
+    const hoursPerDay = activeContract?.minutesPerDay ? activeContract.minutesPerDay / 60 : 8;
+    const capacityHours = (weekdays - timeOffDays) * hoursPerDay;
+
+    // Utilization
+    const utilization = capacityHours > 0 ? Math.round((totalWorkHours / capacityHours) * 100) : 0;
+
+    // Billings (hourly rate * work hours)
+    const hourlyRate = activeContract?.costRateHourly ?? 0;
+    const billings = totalWorkHours * hourlyRate;
+
+    return { utilization, timeOffDays, totalWorkHours, billings };
+  }, [assignments, leaves, startISO, endISO, activeContract]);
 
   return (
     <div className="space-y-6">
@@ -100,10 +156,30 @@ function SnapshotTab({
 
       {/* KPI cards */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <KpiCard label="Team" value={teamName} />
-        <KpiCard label="Role" value={roleName} />
-        <KpiCard label="Status" value={person.archived ? 'Archived' : 'Active'} />
-        <KpiCard label="Email" value={person.email ?? '\u2014'} />
+        <KpiCard label="Utilization" value={`${kpis.utilization}%`} />
+        <KpiCard label="Time Off" value={kpis.timeOffDays > 0 ? `${kpis.timeOffDays} day${kpis.timeOffDays !== 1 ? 's' : ''}` : 'None'} />
+        <KpiCard label="Work Assigned" value={`${Math.round(kpis.totalWorkHours)}h`} />
+        <KpiCard label="Billings" value={formatCurrency(kpis.billings)} />
+      </div>
+
+      {/* Secondary info */}
+      <div className="grid grid-cols-2 gap-3 rounded-lg border border-gray-200 bg-white p-4 text-sm sm:grid-cols-4">
+        <div>
+          <p className="text-xs text-gray-500">Team</p>
+          <p className="font-medium text-gray-900">{teamName}</p>
+        </div>
+        <div>
+          <p className="text-xs text-gray-500">Role</p>
+          <p className="font-medium text-gray-900">{roleName}</p>
+        </div>
+        <div>
+          <p className="text-xs text-gray-500">Status</p>
+          <p className="font-medium text-gray-900">{person.archived ? 'Archived' : 'Active'}</p>
+        </div>
+        <div>
+          <p className="text-xs text-gray-500">Email</p>
+          <p className="font-medium text-gray-900">{person.email ?? '\u2014'}</p>
+        </div>
       </div>
 
       {/* Skills summary */}
@@ -458,6 +534,7 @@ export function PersonDetailPage() {
   const { data: teamsRes } = useTeams();
   const { data: rolesRes } = useRoles();
   const [activeTab, setActiveTab] = useState<Tab>('snapshot');
+  const [notesOpen, setNotesOpen] = useState(false);
 
   const contracts: Contract[] = contractsRes?.data ?? [];
   const teams: Team[] = teamsRes?.data ?? [];
@@ -500,6 +577,13 @@ export function PersonDetailPage() {
             <ExternalLink className="h-3.5 w-3.5" />
             Open in Planner
           </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setNotesOpen(true)}
+          >
+            Notes
+          </Button>
           <ThreeDotMenu
             items={[
               { label: 'Edit', onClick: () => {} },
@@ -538,6 +622,14 @@ export function PersonDetailPage() {
         <ContractsTab contracts={contracts} isLoading={contractsLoading} roles={roles} />
       )}
       {activeTab === 'timeoff' && <TimeOffTab personId={id!} />}
+
+      <NotesPanel
+        entityType="person"
+        entityId={id!}
+        entityName={`${person.firstName} ${person.lastName}`}
+        open={notesOpen}
+        onClose={() => setNotesOpen(false)}
+      />
     </div>
   );
 }

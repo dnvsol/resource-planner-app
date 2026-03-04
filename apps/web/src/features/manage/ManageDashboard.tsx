@@ -1,3 +1,4 @@
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Settings,
@@ -9,6 +10,9 @@ import {
   Tag,
   Building2,
   ChevronRight,
+  ChevronUp,
+  ChevronDown,
+  Search,
 } from 'lucide-react';
 import {
   usePeople,
@@ -30,6 +34,9 @@ interface ManageItem {
   loading: boolean;
 }
 
+type SortKey = 'label' | 'count';
+type SortDir = 'asc' | 'desc';
+
 export function ManageDashboard() {
   const navigate = useNavigate();
   const { data: peopleRes, isLoading: pLoading } = usePeople();
@@ -41,7 +48,11 @@ export function ManageDashboard() {
   const { data: teamsRes, isLoading: tLoading } = useTeams();
   const { data: tagsRes, isLoading: tagLoading } = useTags();
 
-  const items: ManageItem[] = [
+  const [search, setSearch] = useState('');
+  const [sortKey, setSortKey] = useState<SortKey>('label');
+  const [sortDir, setSortDir] = useState<SortDir>('asc');
+
+  const allItems: ManageItem[] = [
     { label: 'Projects', path: '/manage/projects', icon: FolderKanban, count: projectsRes?.data?.length, loading: prLoading },
     { label: 'People', path: '/manage/people', icon: Users, count: peopleRes?.data?.length, loading: pLoading },
     { label: 'Clients', path: '/manage/clients', icon: Building2, count: clientsRes?.data?.length, loading: cLoading },
@@ -52,6 +63,40 @@ export function ManageDashboard() {
     { label: 'Tags', path: '/manage/tags', icon: Tag, count: tagsRes?.data?.length, loading: tagLoading },
   ];
 
+  const items = useMemo(() => {
+    let list = allItems;
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      list = list.filter((i) => i.label.toLowerCase().includes(q));
+    }
+    list = [...list].sort((a, b) => {
+      if (sortKey === 'label') {
+        const cmp = a.label.localeCompare(b.label);
+        return sortDir === 'asc' ? cmp : -cmp;
+      }
+      const aCount = a.count ?? 0;
+      const bCount = b.count ?? 0;
+      return sortDir === 'asc' ? aCount - bCount : bCount - aCount;
+    });
+    return list;
+  }, [search, sortKey, sortDir, allItems]);
+
+  const handleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortKey(key);
+      setSortDir('asc');
+    }
+  };
+
+  const SortIcon = ({ col }: { col: SortKey }) => {
+    if (sortKey !== col) return <ChevronUp className="ml-1 inline h-3 w-3 text-gray-300" />;
+    return sortDir === 'asc'
+      ? <ChevronUp className="ml-1 inline h-3 w-3 text-indigo-600" />
+      : <ChevronDown className="ml-1 inline h-3 w-3 text-indigo-600" />;
+  };
+
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
       <PageHeader
@@ -60,10 +105,34 @@ export function ManageDashboard() {
       />
 
       <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
+        {/* Search bar */}
+        <div className="border-b border-gray-100 px-5 py-3">
+          <div className="relative max-w-xs">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search..."
+              className="w-full rounded-md border border-gray-300 py-1.5 pl-9 pr-3 text-sm placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            />
+          </div>
+        </div>
+
         {/* Table header */}
         <div className="grid grid-cols-[1fr_80px_80px] border-b border-gray-100 px-5 py-3">
-          <span className="text-xs font-medium uppercase tracking-wider text-gray-500">Name</span>
-          <span className="text-center text-xs font-medium uppercase tracking-wider text-gray-500">Count</span>
+          <button
+            onClick={() => handleSort('label')}
+            className="flex items-center text-left text-xs font-medium uppercase tracking-wider text-gray-500 hover:text-gray-700"
+          >
+            Name <SortIcon col="label" />
+          </button>
+          <button
+            onClick={() => handleSort('count')}
+            className="flex items-center justify-center text-xs font-medium uppercase tracking-wider text-gray-500 hover:text-gray-700"
+          >
+            Count <SortIcon col="count" />
+          </button>
           <span />
         </div>
 

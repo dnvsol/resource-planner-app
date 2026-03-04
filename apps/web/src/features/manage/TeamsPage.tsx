@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Plus, Pencil, Trash2, Check, X, Users } from 'lucide-react';
-import { useTeams, useCreateTeam, useUpdateTeam, useDeleteTeam } from '@/shared/api/hooks';
-import type { Team } from '@/shared/api/hooks';
+import { useTeams, useCreateTeam, useUpdateTeam, useDeleteTeam, usePeople, useProjects } from '@/shared/api/hooks';
+import type { Team, Person, Project } from '@/shared/api/hooks';
 import { Button } from '@/shared/components/ui/Button';
 import { PageHeader } from '@/shared/components/PageHeader';
 import { ListCard } from '@/shared/components/ListCard';
@@ -12,13 +12,33 @@ export function TeamsPage() {
   const createTeam = useCreateTeam();
   const updateTeam = useUpdateTeam();
   const deleteTeam = useDeleteTeam();
+  const { data: peopleRes } = usePeople();
+  const { data: projectsRes } = useProjects();
   const teams: Team[] = teamsRes?.data ?? [];
+  const people: Person[] = peopleRes?.data ?? [];
+  const projects: Project[] = projectsRes?.data ?? [];
 
   const [search, setSearch] = useState('');
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
+
+  const peopleCountMap = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const p of people) {
+      if (p.teamId && !p.archived) m.set(p.teamId, (m.get(p.teamId) ?? 0) + 1);
+    }
+    return m;
+  }, [people]);
+
+  const projectCountMap = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const p of projects) {
+      if (p.teamId && p.state === 'active') m.set(p.teamId, (m.get(p.teamId) ?? 0) + 1);
+    }
+    return m;
+  }, [projects]);
 
   const filtered = teams.filter((t) =>
     !search.trim() || t.name.toLowerCase().includes(search.toLowerCase()),
@@ -41,6 +61,7 @@ export function TeamsPage() {
     {
       key: 'name',
       header: 'NAME',
+      sortable: true,
       render: (row) => {
         if (editingId === row.id) {
           return (
@@ -53,6 +74,16 @@ export function TeamsPage() {
         }
         return <span className="text-sm font-medium text-gray-900">{row.name}</span>;
       },
+    },
+    {
+      key: 'people',
+      header: 'ACTIVE PEOPLE',
+      render: (row) => <span className="text-sm text-gray-600">{peopleCountMap.get(row.id) ?? 0}</span>,
+    },
+    {
+      key: 'projects',
+      header: 'ACTIVE PROJECTS',
+      render: (row) => <span className="text-sm text-gray-600">{projectCountMap.get(row.id) ?? 0}</span>,
     },
     {
       key: 'actions',

@@ -97,6 +97,8 @@ export const queryKeys = {
     ['projects', projectId, 'rates'] as const,
   projectFinancials: (projectId: string) =>
     ['projects', projectId, 'financials'] as const,
+  personNotes: (personId: string) => ['people', personId, 'notes'] as const,
+  projectNotes: (projectId: string) => ['projects', projectId, 'notes'] as const,
   insights: {
     utilization: (startDate: string, endDate: string) =>
       ['insights', 'utilization', startDate, endDate] as const,
@@ -411,6 +413,19 @@ export function useUpdateProject() {
       queryClient.invalidateQueries({
         queryKey: queryKeys.projects.detail(variables.id),
       });
+    },
+  });
+}
+
+export function useDeleteProject() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await apiClient.delete(`/projects/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.all });
     },
   });
 }
@@ -951,6 +966,83 @@ export function useProjectsReport(startDate?: string, endDate?: string) {
         pricingModel: string;
         financials: ProjectFinancials;
       }>('/reports/projects', params);
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Notes hooks
+// ---------------------------------------------------------------------------
+
+interface Note {
+  id: string;
+  content: string;
+  createdAt: string;
+  authorId?: string;
+}
+
+export function usePersonNotes(personId: string) {
+  return useQuery({
+    queryKey: queryKeys.personNotes(personId),
+    queryFn: () => fetchArray<Note>(`/people/${personId}/notes`),
+    enabled: !!personId,
+  });
+}
+
+export function useCreatePersonNote() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ personId, content }: { personId: string; content: string }) => {
+      const { data } = await apiClient.post<ApiResponse<Note>>(`/people/${personId}/notes`, { content });
+      return data.data;
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.personNotes(variables.personId) });
+    },
+  });
+}
+
+export function useDeletePersonNote() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ personId, noteId }: { personId: string; noteId: string }) => {
+      await apiClient.delete(`/people/${personId}/notes/${noteId}`);
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.personNotes(variables.personId) });
+    },
+  });
+}
+
+export function useProjectNotes(projectId: string) {
+  return useQuery({
+    queryKey: queryKeys.projectNotes(projectId),
+    queryFn: () => fetchArray<Note>(`/projects/${projectId}/notes`),
+    enabled: !!projectId,
+  });
+}
+
+export function useCreateProjectNote() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ projectId, content }: { projectId: string; content: string }) => {
+      const { data } = await apiClient.post<ApiResponse<Note>>(`/projects/${projectId}/notes`, { content });
+      return data.data;
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.projectNotes(variables.projectId) });
+    },
+  });
+}
+
+export function useDeleteProjectNote() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ projectId, noteId }: { projectId: string; noteId: string }) => {
+      await apiClient.delete(`/projects/${projectId}/notes/${noteId}`);
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.projectNotes(variables.projectId) });
     },
   });
 }

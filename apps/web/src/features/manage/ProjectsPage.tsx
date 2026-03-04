@@ -1,11 +1,12 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, FolderKanban } from 'lucide-react';
+import { Plus, FolderKanban, Pencil } from 'lucide-react';
 import {
   useProjects,
   useCreateProject,
   useClients,
   useTeams,
+  useDeleteProject,
 } from '@/shared/api/hooks';
 import type { Project, Client, Team } from '@/shared/api/hooks';
 import { DataTable, type Column } from '@/shared/components/DataTable';
@@ -13,19 +14,13 @@ import { Modal } from '@/shared/components/ui/Modal';
 import { Button } from '@/shared/components/ui/Button';
 import { PageHeader } from '@/shared/components/PageHeader';
 import { ListCard } from '@/shared/components/ListCard';
+import { ThreeDotMenu } from '@/shared/components/ui/ThreeDotMenu';
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
-type StateFilter = 'all' | 'confirmed' | 'tentative' | 'archived';
-
-const STATE_FILTERS: { key: StateFilter; label: string }[] = [
-  { key: 'all', label: 'All' },
-  { key: 'confirmed', label: 'Active' },
-  { key: 'tentative', label: 'Tentative' },
-  { key: 'archived', label: 'Archived' },
-];
+type StateFilter = 'active' | 'tentative' | 'archived';
 
 const PRICING_MODEL_LABELS: Record<string, string> = {
   time_and_materials: 'Time and Materials',
@@ -141,22 +136,23 @@ interface ProjectRow extends Project {
 }
 
 // ---------------------------------------------------------------------------
-// Color square for project
+// Color icon for project (matches Runn style)
 // ---------------------------------------------------------------------------
 
 function ProjectIcon({ project }: { project: ProjectRow }) {
   if (project.emoji) {
-    return <span className="text-base">{project.emoji}</span>;
+    return <span className="text-lg">{project.emoji}</span>;
   }
-  // Hash-based color
   const colors = ['#6366f1', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#3b82f6', '#ef4444'];
   const hash = project.name.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
   const color = colors[hash % colors.length];
   return (
     <span
-      className="inline-block h-4 w-4 flex-shrink-0 rounded"
+      className="inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg text-xs font-bold text-white"
       style={{ backgroundColor: color }}
-    />
+    >
+      {project.name.charAt(0).toUpperCase()}
+    </span>
   );
 }
 
@@ -169,9 +165,12 @@ export function ProjectsPage() {
   const { data: projectsRes, isLoading } = useProjects();
   const { data: clientsRes } = useClients();
   const { data: teamsRes } = useTeams();
-  const [filter, setFilter] = useState<StateFilter>('all');
+  const deleteProject = useDeleteProject();
+  const [filter, setFilter] = useState<StateFilter>('active');
   const [search, setSearch] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
+  const [sortCol, setSortCol] = useState('name');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
 
   const projects: Project[] = projectsRes?.data ?? [];
   const clients: Client[] = clientsRes?.data ?? [];
@@ -198,7 +197,7 @@ export function ProjectsPage() {
 
     if (filter === 'archived') enriched = enriched.filter((p) => p.state === 'archived');
     else if (filter === 'tentative') enriched = enriched.filter((p) => p.state === 'active' && p.status === 'tentative');
-    else if (filter === 'confirmed') enriched = enriched.filter((p) => p.state === 'active' && p.status === 'confirmed');
+    else enriched = enriched.filter((p) => p.state === 'active');
 
     if (search.trim()) {
       const q = search.toLowerCase();
@@ -207,11 +206,21 @@ export function ProjectsPage() {
         (p._clientName?.toLowerCase().includes(q) ?? false),
       );
     }
-    return enriched;
-  }, [projects, clientMap, teamMap, filter, search]);
 
-  const formatBudget = (budget: number | null) => {
-    if (budget === null || budget === undefined) {
+    enriched.sort((a, b) => {
+      let cmp = 0;
+      if (sortCol === 'name') cmp = a.name.localeCompare(b.name);
+      else if (sortCol === 'client') cmp = (a._clientName ?? '').localeCompare(b._clientName ?? '');
+      else if (sortCol === 'team') cmp = (a._teamName ?? '').localeCompare(b._teamName ?? '');
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+
+    return enriched;
+  }, [projects, clientMap, teamMap, filter, search, sortCol, sortDir]);
+
+  const formatBudget = (row: ProjectRow) => {
+    const val = (row as any).budgetTotal ?? row.budget;
+    if (val === null || val === undefined || val === 0) {
       return <span className="text-gray-400">&mdash;</span>;
     }
     return new Intl.NumberFormat('en-US', {
@@ -219,15 +228,16 @@ export function ProjectsPage() {
       currency: 'USD',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
-    }).format(budget);
+    }).format(val);
   };
 
   const columns: Column<ProjectRow>[] = [
     {
       key: 'name',
       header: 'NAME',
+      sortable: true,
       render: (row) => (
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-3">
           <ProjectIcon project={row} />
           <button
             onClick={(e) => { e.stopPropagation(); navigate(`/manage/projects/${row.id}`); }}
@@ -241,15 +251,18 @@ export function ProjectsPage() {
     {
       key: 'client',
       header: 'CLIENT',
-      render: (row) => row._clientName ?? <span className="text-gray-400">&mdash;</span>,
+      sortable: true,
+      render: (row) => row._clientName
+        ? <span className="text-gray-700">{row._clientName}</span>
+        : <span className="text-gray-400">&mdash;</span>,
     },
     {
       key: 'status',
       header: 'STATUS',
       render: (row) => {
-        if (row.state === 'archived') return <span className="text-sm text-gray-500">Archived</span>;
-        if (row.status === 'tentative') return <span className="text-sm text-amber-600">Tentative</span>;
-        return <span className="text-sm text-green-600">Confirmed</span>;
+        if (row.state === 'archived') return <span className="text-sm font-medium text-gray-500">Archived</span>;
+        if (row.status === 'tentative') return <span className="text-sm font-medium text-amber-600">Tentative</span>;
+        return <span className="text-sm font-medium text-green-600">Confirmed</span>;
       },
     },
     {
@@ -257,18 +270,20 @@ export function ProjectsPage() {
       header: 'PRICING MODEL',
       render: (row) =>
         row.pricingModel
-          ? (PRICING_MODEL_LABELS[row.pricingModel] ?? row.pricingModel)
+          ? <span className="text-gray-700">{PRICING_MODEL_LABELS[row.pricingModel] ?? row.pricingModel}</span>
           : <span className="text-gray-400">&mdash;</span>,
     },
     {
       key: 'budget',
       header: 'BUDGET',
-      render: (row) => formatBudget((row as any).budgetTotal ?? row.budget),
+      render: (row) => <span className="font-medium text-gray-900">{formatBudget(row)}</span>,
     },
     {
       key: 'team',
       header: 'PRIMARY TEAM',
-      render: (row) => row._teamName ?? <span className="text-gray-400">&mdash;</span>,
+      render: (row) => row._teamName
+        ? <span className="text-gray-700">{row._teamName}</span>
+        : <span className="text-gray-400">&mdash;</span>,
     },
     {
       key: 'tags',
@@ -288,23 +303,35 @@ export function ProjectsPage() {
         );
       },
     },
+    {
+      key: 'actions',
+      header: '',
+      render: (row) => (
+        <ThreeDotMenu
+          items={[
+            { label: 'Edit', icon: <Pencil className="h-3.5 w-3.5" />, onClick: () => navigate(`/manage/projects/${row.id}`) },
+            { label: 'Open in Planner', onClick: () => navigate('/planner/projects') },
+            { label: 'Archive', onClick: () => {} },
+            { label: 'Delete', onClick: () => { if (confirm('Delete this project?')) deleteProject.mutate(row.id); }, danger: true },
+          ]}
+        />
+      ),
+    },
   ];
 
+  // Filter dropdown (matches Runn style)
   const filterNode = (
-    <div className="flex gap-1 rounded-lg bg-gray-100 p-0.5">
-      {STATE_FILTERS.map((f) => (
-        <button
-          key={f.key}
-          onClick={() => setFilter(f.key)}
-          className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
-            filter === f.key
-              ? 'bg-white text-gray-900 shadow-sm'
-              : 'text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          {f.label}
-        </button>
-      ))}
+    <div className="flex items-center gap-2">
+      <span className="text-sm text-gray-500">Filter</span>
+      <select
+        value={filter}
+        onChange={(e) => setFilter(e.target.value as StateFilter)}
+        className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+      >
+        <option value="active">Active</option>
+        <option value="tentative">Tentative</option>
+        <option value="archived">Archived</option>
+      </select>
     </div>
   );
 
@@ -315,17 +342,22 @@ export function ProjectsPage() {
         title="Projects"
         count={filteredProjects.length}
         actions={
-          <Button onClick={() => setModalOpen(true)}>
-            <Plus className="h-4 w-4" />
-            New Project
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button variant="secondary" onClick={() => {}}>
+              Bulk Edit
+            </Button>
+            <Button onClick={() => setModalOpen(true)}>
+              <Plus className="h-4 w-4" />
+              New Project
+            </Button>
+          </div>
         }
       />
 
       <ListCard
         search={search}
         onSearchChange={setSearch}
-        searchPlaceholder="Search projects..."
+        searchPlaceholder="Search"
         filterNode={filterNode}
       >
         <DataTable<ProjectRow>
@@ -334,6 +366,9 @@ export function ProjectsPage() {
           loading={isLoading}
           onRowClick={(row) => navigate(`/manage/projects/${row.id}`)}
           emptyMessage="No projects found."
+          sortColumn={sortCol}
+          sortDirection={sortDir}
+          onSort={(key, dir) => { setSortCol(key); setSortDir(dir); }}
         />
       </ListCard>
 

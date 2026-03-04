@@ -15,6 +15,7 @@ import { SettingsPage } from '@/features/manage/SettingsPage';
 import { RateCardsPage } from '@/features/manage/RateCardsPage';
 import { RolesPage } from '@/features/manage/RolesPage';
 import { ClientsPage } from '@/features/manage/ClientsPage';
+import { ClientDetailPage } from '@/features/manage/ClientDetailPage';
 import { TeamsPage } from '@/features/manage/TeamsPage';
 import { SkillsPage } from '@/features/manage/SkillsPage';
 import { TagsPage } from '@/features/manage/TagsPage';
@@ -57,6 +58,7 @@ function AppRoutes() {
           <Route path="/manage/rate-cards" element={<RateCardsPage />} />
           <Route path="/manage/roles" element={<RolesPage />} />
           <Route path="/manage/clients" element={<ClientsPage />} />
+          <Route path="/manage/clients/:id" element={<ClientDetailPage />} />
           <Route path="/manage/teams" element={<TeamsPage />} />
           <Route path="/manage/skills" element={<SkillsPage />} />
           <Route path="/manage/tags" element={<TagsPage />} />

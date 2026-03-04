@@ -1,28 +1,64 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus, Pencil, Trash2, Check, X, Building2 } from 'lucide-react';
-import { useClients, useCreateClient, useUpdateClient, useDeleteClient } from '@/shared/api/hooks';
-import type { Client } from '@/shared/api/hooks';
+import { useClients, useCreateClient, useUpdateClient, useDeleteClient, useProjects } from '@/shared/api/hooks';
+import type { Client, Project } from '@/shared/api/hooks';
 import { Button } from '@/shared/components/ui/Button';
 import { PageHeader } from '@/shared/components/PageHeader';
 import { ListCard } from '@/shared/components/ListCard';
 import { DataTable, type Column } from '@/shared/components/DataTable';
 
+function ClientIcon({ name }: { name: string }) {
+  const colors = ['#6366f1', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#3b82f6', '#ef4444'];
+  const hash = name.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+  const color = colors[hash % colors.length];
+  return (
+    <span
+      className="inline-flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg text-xs font-bold text-white"
+      style={{ backgroundColor: color }}
+    >
+      {name.charAt(0).toUpperCase()}
+    </span>
+  );
+}
+
 export function ClientsPage() {
+  const navigate = useNavigate();
   const { data: clientsRes, isLoading } = useClients();
   const createClient = useCreateClient();
   const updateClient = useUpdateClient();
   const deleteClient = useDeleteClient();
+  const { data: projectsRes } = useProjects();
   const clients: Client[] = clientsRes?.data ?? [];
+  const projects: Project[] = projectsRes?.data ?? [];
 
   const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState<'active' | 'archived' | 'all'>('active');
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
 
-  const filtered = clients.filter((c) =>
-    !search.trim() || c.name.toLowerCase().includes(search.toLowerCase()),
-  );
+  const projectCountMap = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const p of projects) {
+      if (p.clientId && p.state === 'active') {
+        m.set(p.clientId, (m.get(p.clientId) ?? 0) + 1);
+      }
+    }
+    return m;
+  }, [projects]);
+
+  const filtered = useMemo(() => {
+    let list = clients;
+    if (filter === 'active') list = list.filter((c) => !(c as any).archived);
+    else if (filter === 'archived') list = list.filter((c) => (c as any).archived);
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      list = list.filter((c) => c.name.toLowerCase().includes(q));
+    }
+    return list;
+  }, [clients, search, filter]);
 
   const handleAdd = async () => {
     if (!newName.trim()) return;
@@ -41,6 +77,7 @@ export function ClientsPage() {
     {
       key: 'name',
       header: 'NAME',
+      sortable: true,
       render: (row) => {
         if (editingId === row.id) {
           return (
@@ -51,7 +88,25 @@ export function ClientsPage() {
             </div>
           );
         }
-        return <span className="text-sm font-medium text-gray-900">{row.name}</span>;
+        return (
+          <div className="flex items-center gap-3">
+            <ClientIcon name={row.name} />
+            <button
+              onClick={(e) => { e.stopPropagation(); navigate(`/manage/clients/${row.id}`); }}
+              className="font-medium text-gray-900 hover:text-indigo-600 hover:underline"
+            >
+              {row.name}
+            </button>
+          </div>
+        );
+      },
+    },
+    {
+      key: 'projects',
+      header: 'ACTIVE PROJECTS',
+      render: (row) => {
+        const count = projectCountMap.get(row.id) ?? 0;
+        return <span className="text-sm text-gray-600">{count}</span>;
       },
     },
     {
@@ -66,6 +121,18 @@ export function ClientsPage() {
     },
   ];
 
+  const filterNode = (
+    <select
+      value={filter}
+      onChange={(e) => setFilter(e.target.value as 'active' | 'archived' | 'all')}
+      className="rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+    >
+      <option value="active">Active</option>
+      <option value="archived">Archived</option>
+      <option value="all">All</option>
+    </select>
+  );
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
       <PageHeader
@@ -75,8 +142,14 @@ export function ClientsPage() {
         actions={<Button onClick={() => { setAdding(true); setNewName(''); }}><Plus className="h-4 w-4" /> New Client</Button>}
       />
 
-      <ListCard search={search} onSearchChange={setSearch} searchPlaceholder="Search clients...">
-        <DataTable<Client> columns={columns} data={filtered} loading={isLoading} emptyMessage="No clients yet." />
+      <ListCard search={search} onSearchChange={setSearch} searchPlaceholder="Search clients..." filterNode={filterNode}>
+        <DataTable<Client>
+          columns={columns}
+          data={filtered}
+          loading={isLoading}
+          onRowClick={(row) => navigate(`/manage/clients/${row.id}`)}
+          emptyMessage="No clients yet."
+        />
         {adding && (
           <div className="flex items-center gap-2 border-t border-gray-100 px-5 py-3">
             <input value={newName} onChange={(e) => setNewName(e.target.value)} autoFocus placeholder="Client name" onKeyDown={(e) => { if (e.key === 'Enter') handleAdd(); if (e.key === 'Escape') setAdding(false); }} className="w-48 rounded-md border border-gray-300 px-2 py-1 text-sm" />

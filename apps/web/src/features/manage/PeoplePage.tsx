@@ -1,9 +1,11 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Users } from 'lucide-react';
+import { Plus, Users, Pencil } from 'lucide-react';
 import {
   usePeople,
   useCreatePerson,
+  useUpdatePerson,
+  useDeletePerson,
   useTeams,
   useRoles,
 } from '@/shared/api/hooks';
@@ -13,6 +15,7 @@ import { Modal } from '@/shared/components/ui/Modal';
 import { Button } from '@/shared/components/ui/Button';
 import { PageHeader } from '@/shared/components/PageHeader';
 import { ListCard } from '@/shared/components/ListCard';
+import { ThreeDotMenu } from '@/shared/components/ui/ThreeDotMenu';
 
 // ---------------------------------------------------------------------------
 // Add Person Modal
@@ -129,9 +132,13 @@ export function PeoplePage() {
   const { data: peopleRes, isLoading: peopleLoading } = usePeople();
   const { data: teamsRes } = useTeams();
   const { data: rolesRes } = useRoles();
+  const updatePerson = useUpdatePerson();
+  const deletePerson = useDeletePerson();
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'active' | 'archived' | 'all'>('active');
   const [modalOpen, setModalOpen] = useState(false);
+  const [sortCol, setSortCol] = useState('name');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
 
   const people: Person[] = peopleRes?.data ?? [];
   const teams: Team[] = teamsRes?.data ?? [];
@@ -168,13 +175,27 @@ export function PeoplePage() {
         return fullName.includes(q) || (p.email?.toLowerCase().includes(q) ?? false);
       });
     }
+
+    list.sort((a, b) => {
+      let cmp = 0;
+      if (sortCol === 'name') {
+        cmp = `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`);
+      } else if (sortCol === 'role') {
+        cmp = (a._roleName ?? '').localeCompare(b._roleName ?? '');
+      } else if (sortCol === 'team') {
+        cmp = (a._teamName ?? '').localeCompare(b._teamName ?? '');
+      }
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+
     return list;
-  }, [people, teamMap, roleMap, search, filter]);
+  }, [people, teamMap, roleMap, search, filter, sortCol, sortDir]);
 
   const columns: Column<PeopleRow>[] = [
     {
       key: 'name',
       header: 'NAME',
+      sortable: true,
       render: (row) => (
         <div className="flex items-center gap-3">
           <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gray-200 text-xs font-bold text-gray-600">
@@ -192,6 +213,7 @@ export function PeoplePage() {
     {
       key: 'role',
       header: 'DEFAULT ROLE',
+      sortable: true,
       render: (row) => row._roleName ?? <span className="text-gray-400">&mdash;</span>,
     },
     {
@@ -210,6 +232,7 @@ export function PeoplePage() {
     {
       key: 'team',
       header: 'TEAM',
+      sortable: true,
       render: (row) =>
         row._teamName ? (
           <span className="text-sm text-gray-600">{row._teamName}</span>
@@ -234,6 +257,19 @@ export function PeoplePage() {
           </div>
         );
       },
+    },
+    {
+      key: 'actions',
+      header: '',
+      render: (row) => (
+        <ThreeDotMenu
+          items={[
+            { label: 'Edit', icon: <Pencil className="h-3.5 w-3.5" />, onClick: () => navigate(`/manage/people/${row.id}`) },
+            { label: row.archived ? 'Unarchive' : 'Archive', onClick: () => updatePerson.mutate({ id: row.id, archived: !row.archived }) },
+            { label: 'Delete', onClick: () => { if (confirm(`Delete ${row.firstName} ${row.lastName}?`)) deletePerson.mutate(row.id); }, danger: true },
+          ]}
+        />
+      ),
     },
   ];
 
@@ -275,6 +311,9 @@ export function PeoplePage() {
           loading={peopleLoading}
           onRowClick={(row) => navigate(`/manage/people/${row.id}`)}
           emptyMessage="No people found."
+          sortColumn={sortCol}
+          sortDirection={sortDir}
+          onSort={(key, dir) => { setSortCol(key); setSortDir(dir); }}
         />
       </ListCard>
 

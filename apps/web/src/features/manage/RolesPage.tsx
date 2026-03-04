@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Plus, Pencil, Trash2, Check, X, Briefcase } from 'lucide-react';
-import { useRoles, useCreateRole, useUpdateRole, useDeleteRole } from '@/shared/api/hooks';
-import type { Role } from '@/shared/api/hooks';
+import { useRoles, useCreateRole, useUpdateRole, useDeleteRole, usePeople } from '@/shared/api/hooks';
+import type { Role, Person } from '@/shared/api/hooks';
 import { Button } from '@/shared/components/ui/Button';
 import { PageHeader } from '@/shared/components/PageHeader';
 import { ListCard } from '@/shared/components/ListCard';
@@ -16,9 +16,22 @@ export function RolesPage() {
   const createRole = useCreateRole();
   const updateRole = useUpdateRole();
   const deleteRole = useDeleteRole();
+  const { data: peopleRes } = usePeople();
   const roles: Role[] = rolesRes?.data ?? [];
+  const people: Person[] = peopleRes?.data ?? [];
+
+  const roleCountMap = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const p of people) {
+      const roleId = (p as any).activeContract?.roleId;
+      if (roleId && !p.archived) m.set(roleId, (m.get(roleId) ?? 0) + 1);
+    }
+    return m;
+  }, [people]);
 
   const [search, setSearch] = useState('');
+  const [sortCol, setSortCol] = useState('name');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState('');
   const [newRate, setNewRate] = useState('');
@@ -28,9 +41,19 @@ export function RolesPage() {
   const [editRate, setEditRate] = useState('');
   const [editCost, setEditCost] = useState('');
 
-  const filtered = roles.filter((r) =>
-    !search.trim() || r.name.toLowerCase().includes(search.toLowerCase()),
-  );
+  const filtered = useMemo(() => {
+    let list = roles.filter((r) =>
+      !search.trim() || r.name.toLowerCase().includes(search.toLowerCase()),
+    );
+    list = [...list].sort((a, b) => {
+      let cmp = 0;
+      if (sortCol === 'name') cmp = a.name.localeCompare(b.name);
+      else if (sortCol === 'rate') cmp = a.defaultHourlyRate - b.defaultHourlyRate;
+      else if (sortCol === 'cost') cmp = a.defaultHourlyCost - b.defaultHourlyCost;
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+    return list;
+  }, [roles, search, sortCol, sortDir]);
 
   const handleAdd = async () => {
     if (!newName.trim()) return;
@@ -60,6 +83,7 @@ export function RolesPage() {
     {
       key: 'name',
       header: 'NAME',
+      sortable: true,
       render: (row) => {
         if (editingId === row.id) {
           return (
@@ -78,12 +102,18 @@ export function RolesPage() {
     {
       key: 'rate',
       header: 'DEFAULT HOURLY RATE',
+      sortable: true,
       render: (row) => editingId === row.id ? null : <span className="text-sm text-gray-600">{formatMoney(row.defaultHourlyRate)}</span>,
     },
     {
       key: 'cost',
       header: 'DEFAULT COST',
       render: (row) => editingId === row.id ? null : <span className="text-sm text-gray-600">{formatMoney(row.defaultHourlyCost)}</span>,
+    },
+    {
+      key: 'people',
+      header: 'PEOPLE',
+      render: (row) => editingId === row.id ? null : <span className="text-sm text-gray-600">{roleCountMap.get(row.id) ?? 0}</span>,
     },
     {
       key: 'actions',
@@ -111,7 +141,15 @@ export function RolesPage() {
       />
 
       <ListCard search={search} onSearchChange={setSearch} searchPlaceholder="Search roles...">
-        <DataTable<Role> columns={columns} data={filtered} loading={isLoading} emptyMessage="No roles yet." />
+        <DataTable<Role>
+          columns={columns}
+          data={filtered}
+          loading={isLoading}
+          emptyMessage="No roles yet."
+          sortColumn={sortCol}
+          sortDirection={sortDir}
+          onSort={(key, dir) => { setSortCol(key); setSortDir(dir); }}
+        />
 
         {adding && (
           <div className="flex items-center gap-2 border-t border-gray-100 px-5 py-3">

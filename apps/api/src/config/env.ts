@@ -1,4 +1,9 @@
+import dotenv from 'dotenv';
 import { z } from 'zod';
+
+// Load .env before validating — must happen here because ESM hoists imports
+dotenv.config();                       // CWD (monorepo root)
+dotenv.config({ path: '../../.env' }); // when CWD is apps/api/
 
 const envSchema = z.object({
   // Database
