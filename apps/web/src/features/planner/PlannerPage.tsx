@@ -548,7 +548,7 @@ export function PlannerPage() {
   const [startDate, setStartDate] = useState(() => getMonday(new Date()));
   const [search] = useState('');
   const [expandedPersons, setExpandedPersons] = useState<Set<string>>(new Set());
-  const [showWeekends, setShowWeekends] = useState(true);
+  const [showWeekends, setShowWeekends] = useState(false);
   const [showPeriodMenu, setShowPeriodMenu] = useState(false);
 
   const periodCfg = PERIODS.find((p) => p.key === period)!;

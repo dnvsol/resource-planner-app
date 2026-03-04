@@ -80,13 +80,13 @@
 
 | # | Feature | Runn.io | DNVSol | Status | Gap |
 |---|---------|---------|--------|--------|-----|
-| 53 | Period: Week | 7 days, daily columns | ❌ Missing | 🔴 Gap | Only Month/Quarter/Half/Year available |
-| 54 | Period: Month | ~5 weeks | ✅ Working (5 weeks) | ✅ Match | — |
-| 55 | Period: Quarter | ~13 weeks | ✅ Working (13 weeks) | ✅ Match | — |
-| 56 | Period: Half Year | ~26 weeks | ✅ Working (26 weeks, default) | ✅ Match | — |
-| 57 | Period: Year | ~52 weeks | ✅ Working (52 weeks) | ✅ Match | — |
-| 58 | Show Weekends checkbox | Toggle weekend visibility in period dropdown | ❌ Missing | 🔴 Gap | No weekends concept |
-| 59 | Period selector as button dropdown | Button with current period + chevron, opens menu | ❌ Native `<select>` element | 🟡 Partial | Works but styling differs from Runn's menu button |
+| 53 | Period: Week | 5 daily columns (Mon-Fri), per-week availability bar | ✅ 5 daily columns (Mon-Fri), 1 per-week avail bar | ✅ Match | — |
+| 54 | Period: Month | Daily columns (5/week × ~5 weeks), per-week availability bars | ✅ 25 daily columns, 5 per-week avail bars | ✅ Match | — |
+| 55 | Period: Quarter | Weekly columns (~13 weeks), per-week availability bars | ✅ 13 weekly columns, 13 per-week avail bars | ✅ Match | — |
+| 56 | Period: Half Year | Weekly columns (~26 weeks), per-month availability bars | ✅ 26 weekly columns, 6 per-month avail bars | ✅ Match | — |
+| 57 | Period: Year | Weekly columns (~52 weeks), per-month availability bars | ✅ 52 weekly columns, 13 per-month avail bars | ✅ Match | — |
+| 58 | Show Weekends checkbox | In period dropdown, enabled for Week/Month, disabled for Quarter/Half/Year | ✅ Enabled for day-gran periods, disabled for week-gran | ✅ Match | — |
+| 59 | Period selector as button dropdown | Button with current period + chevron, opens custom menu with Show Weekends | ✅ Custom dropdown with period options + Show Weekends | ✅ Match | — |
 
 ---
 
@@ -308,7 +308,7 @@
 | 1.1 Filter Bar | 17 | 0 | 1 | 14 | 2 |
 | 1.2 Controls Bar | 30 | 3 | 3 | 24 | 0 |
 | 1.3 Navigation | 5 | 5 | 0 | 0 | 0 |
-| 1.4 Period Selector | 7 | 4 | 1 | 2 | 0 |
+| 1.4 Period Selector | 7 | 7 | 0 | 0 | 0 |
 | 2. Left Panel | 37 | 17 | 5 | 15 | 0 |
 | 3. Timeline Panel | 12 | 6 | 2 | 4 | 0 |
 | 4. Assignment Popover | 10 | 0 | 0 | 10 | 0 |
@@ -319,9 +319,9 @@
 | 9. Assign Project Dialog | 10 | 0 | 0 | 10 | 0 |
 | 10. Tooltips & Hover | 8 | 1 | 3 | 4 | 0 |
 | 11. Placeholders | 3 | 0 | 0 | 3 | 0 |
-| **TOTAL** | **163** | **36 (22%)** | **16 (10%)** | **109 (67%)** | **2 (1%)** |
+| **TOTAL** | **163** | **39 (24%)** | **15 (9%)** | **107 (66%)** | **2 (1%)** |
 
-**Overall match rate:** 22% full match, 32% including partial matches.
+**Overall match rate:** 24% full match, 33% including partial matches.
 
 ---
 
