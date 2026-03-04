@@ -15,13 +15,13 @@ export class TeamEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({ type: 'uuid', name: 'account_id' })
+  @Column({ type: 'char', length: 36, name: 'account_id' })
   accountId!: string;
 
   @Column({ type: 'varchar', length: 100 })
   name!: string;
 
-  @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
+  @CreateDateColumn({ type: 'datetime', name: 'created_at' })
   createdAt!: Date;
 }
 
@@ -34,7 +34,7 @@ export class RoleEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({ type: 'uuid', name: 'account_id' })
+  @Column({ type: 'char', length: 36, name: 'account_id' })
   accountId!: string;
 
   @Column({ type: 'varchar', length: 100 })
@@ -46,10 +46,10 @@ export class RoleEntity {
   @Column({ type: 'decimal', precision: 10, scale: 2, name: 'default_hourly_cost', default: 0 })
   defaultHourlyCost!: number;
 
-  @Column({ type: 'jsonb', default: '{}' })
+  @Column({ type: 'json', default: '{}' })
   references!: Record<string, string>;
 
-  @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
+  @CreateDateColumn({ type: 'datetime', name: 'created_at' })
   createdAt!: Date;
 }
 
@@ -62,13 +62,13 @@ export class SkillEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({ type: 'uuid', name: 'account_id' })
+  @Column({ type: 'char', length: 36, name: 'account_id' })
   accountId!: string;
 
   @Column({ type: 'varchar', length: 100 })
   name!: string;
 
-  @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
+  @CreateDateColumn({ type: 'datetime', name: 'created_at' })
   createdAt!: Date;
 }
 
@@ -81,7 +81,7 @@ export class TagEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({ type: 'uuid', name: 'account_id' })
+  @Column({ type: 'char', length: 36, name: 'account_id' })
   accountId!: string;
 
   @Column({ type: 'varchar', length: 100 })
@@ -90,7 +90,7 @@ export class TagEntity {
   @Column({ type: 'varchar', length: 20, name: 'entity_type' })
   entityType!: string;
 
-  @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
+  @CreateDateColumn({ type: 'datetime', name: 'created_at' })
   createdAt!: Date;
 }
 
@@ -103,7 +103,7 @@ export class ClientEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({ type: 'uuid', name: 'account_id' })
+  @Column({ type: 'char', length: 36, name: 'account_id' })
   accountId!: string;
 
   @Column({ type: 'varchar', length: 255 })
@@ -112,12 +112,12 @@ export class ClientEntity {
   @Column({ type: 'varchar', length: 255, nullable: true })
   website!: string | null;
 
-  @Column({ type: 'jsonb', default: '{}' })
+  @Column({ type: 'json', default: '{}' })
   references!: Record<string, string>;
 
-  @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
+  @CreateDateColumn({ type: 'datetime', name: 'created_at' })
   createdAt!: Date;
 
-  @UpdateDateColumn({ type: 'timestamptz', name: 'updated_at' })
+  @UpdateDateColumn({ type: 'datetime', name: 'updated_at' })
   updatedAt!: Date;
 }

@@ -88,7 +88,6 @@ const PROJECT_COLORS = [
 
 // ---------------------------------------------------------------------------
 // Assignment data — mirrors approximate Runn.io allocation patterns
-// person index → project name, role, date range, minutes/day
 // ---------------------------------------------------------------------------
 
 const ASSIGNMENTS: {
@@ -98,78 +97,37 @@ const ASSIGNMENTS: {
   end: string;
   mpd: number;
 }[] = [
-  // Hoang Minh Tran (Cloud Engineer) — partially allocated
   { person: 0, project: 'Innovation Platform', start: '2026-03-02', end: '2026-08-31', mpd: 360 },
-
-  // Hoang Quan Le (Full Stack Developer) — heavily over-allocated
   { person: 1, project: 'CodeOS', start: '2026-03-02', end: '2026-08-31', mpd: 480 },
   { person: 1, project: 'IPL Product', start: '2026-04-06', end: '2026-08-31', mpd: 480 },
-
-  // Hoang Tam Nguyen (Back End Developer) — slightly over in Apr
   { person: 2, project: 'Cumulocity', start: '2026-03-02', end: '2026-08-31', mpd: 480 },
   { person: 2, project: 'AI POC', start: '2026-04-06', end: '2026-05-03', mpd: 480 },
-
-  // Khanh Vy Ngo (Project Manager) — over-allocated most weeks
   { person: 3, project: 'Nazeel', start: '2026-03-02', end: '2026-08-31', mpd: 480 },
   { person: 3, project: 'Netaq', start: '2026-03-02', end: '2026-08-31', mpd: 240 },
-
-  // Long Nhat Le (Project Manager) — under-allocated
   { person: 4, project: 'Tibbygo', start: '2026-03-09', end: '2026-08-31', mpd: 360 },
-
-  // Minh Toan Trinh (Back End Developer) — over in Mar, free later
   { person: 5, project: 'Tansri', start: '2026-03-02', end: '2026-04-12', mpd: 480 },
   { person: 5, project: 'Rabdan POC', start: '2026-03-02', end: '2026-03-29', mpd: 480 },
-
-  // Ngoc Danh Ho (Full Stack Developer) — heavily over-allocated
   { person: 6, project: 'CodeOS', start: '2026-03-02', end: '2026-08-31', mpd: 480 },
   { person: 6, project: 'IPL Product', start: '2026-04-06', end: '2026-08-31', mpd: 480 },
-
-  // Quang Hoang Nguyen (Back End Developer) — full, over in May/Jun
   { person: 7, project: 'Integration Platform', start: '2026-03-02', end: '2026-08-31', mpd: 480 },
   { person: 7, project: 'Smartbox', start: '2026-05-04', end: '2026-06-28', mpd: 480 },
-
-  // Quoc Khanh Nguyen (Full Stack Developer) — fully allocated
   { person: 8, project: 'Bookstore (Ph.1)', start: '2026-03-02', end: '2026-05-31', mpd: 480 },
   { person: 8, project: 'Bookstore (Ph.2)', start: '2026-06-01', end: '2026-08-31', mpd: 480 },
-
-  // Quoc Thai Bui (QC Engineer) — over-allocated
   { person: 9, project: 'IOT Platform (Ph.1)', start: '2026-03-02', end: '2026-08-31', mpd: 480 },
   { person: 9, project: 'IOT Platform (Ph.2)', start: '2026-03-02', end: '2026-08-31', mpd: 240 },
-
-  // Quoc Thinh Nguyen (Front End Developer) — fully allocated
   { person: 10, project: 'Fikahub', start: '2026-03-02', end: '2026-08-31', mpd: 480 },
-
-  // Quy Nguyen (Back End Developer) — over in Mar, free later
   { person: 11, project: 'Na AI POC', start: '2026-03-02', end: '2026-05-03', mpd: 480 },
   { person: 11, project: 'Dynamic 365 POC', start: '2026-03-02', end: '2026-04-12', mpd: 480 },
-
-  // Thanh Huy Phung (Back End Developer) — fully allocated
   { person: 12, project: 'Nazeel', start: '2026-03-02', end: '2026-08-31', mpd: 480 },
-
-  // Thanh Nhon Vo (DevOps Engineer) — partially allocated
   { person: 13, project: 'Innovation Platform', start: '2026-03-02', end: '2026-08-31', mpd: 360 },
-
-  // The Cuong Lai (Front End Developer) — fully allocated
   { person: 14, project: 'IPL Product', start: '2026-03-02', end: '2026-08-31', mpd: 480 },
-
-  // Truc Linh Pham (QC Engineer) — fully allocated
   { person: 15, project: 'IOT Platform (Ph.3)', start: '2026-03-02', end: '2026-08-31', mpd: 480 },
-
-  // Tuan Khoi Hoang (Back End Developer) — fully allocated
   { person: 16, project: 'Tibbygo', start: '2026-03-02', end: '2026-08-31', mpd: 480 },
-
-  // Van Binh Nguyen (Front End Developer) — fully allocated
   { person: 17, project: 'Netaq', start: '2026-03-02', end: '2026-05-31', mpd: 480 },
   { person: 17, project: 'Smartbox', start: '2026-06-01', end: '2026-08-31', mpd: 480 },
-
-  // Viet Khanh Le (Solution Architect) — fully allocated
   { person: 18, project: 'Tibbygo', start: '2026-03-02', end: '2026-08-31', mpd: 480 },
-
-  // Xuan Huong Nguyen (QC Engineer) — fully allocated
   { person: 19, project: 'Power Platform POC', start: '2026-03-02', end: '2026-05-31', mpd: 480 },
   { person: 19, project: 'IOT Platform (Ph.2)', start: '2026-06-01', end: '2026-08-31', mpd: 480 },
-
-  // Xuan Quy Mai (Full Stack Developer) — fully allocated
   { person: 20, project: 'Tansri', start: '2026-03-02', end: '2026-06-28', mpd: 480 },
   { person: 20, project: 'Cumulocity', start: '2026-07-06', end: '2026-08-31', mpd: 480 },
 ];
@@ -182,32 +140,22 @@ async function seed() {
   console.log('Seeding database with Runn.io data...');
   const dataSource = await initializeDatabase();
 
-  // ---- CLEAR existing data (order matters for FK constraints) ----
+  // ---- CLEAR existing data (disable FK checks for clean truncation) ----
   console.log('  Clearing existing data...');
-  await dataSource.query(`DELETE FROM project_other_expenses`);
-  await dataSource.query(`DELETE FROM project_rates`);
-  await dataSource.query(`DELETE FROM rate_card_entries`);
-  await dataSource.query(`DELETE FROM rate_cards`);
-  await dataSource.query(`DELETE FROM assignments`);
-  await dataSource.query(`DELETE FROM person_skills`);
-  await dataSource.query(`DELETE FROM person_tags`);
-  await dataSource.query(`DELETE FROM project_tags`);
-  await dataSource.query(`DELETE FROM project_milestones`);
-  await dataSource.query(`DELETE FROM project_phases`);
-  await dataSource.query(`DELETE FROM budget_roles`);
-  await dataSource.query(`DELETE FROM person_notes`);
-  await dataSource.query(`DELETE FROM project_notes`);
-  await dataSource.query(`DELETE FROM contracts`);
-  await dataSource.query(`DELETE FROM scheduled_leaves`);
-  await dataSource.query(`DELETE FROM people`);
-  await dataSource.query(`DELETE FROM projects`);
-  await dataSource.query(`DELETE FROM roles`);
-  await dataSource.query(`DELETE FROM skills`);
-  await dataSource.query(`DELETE FROM tags`);
-  await dataSource.query(`DELETE FROM teams`);
-  await dataSource.query(`DELETE FROM clients`);
-  await dataSource.query(`DELETE FROM users`);
-  await dataSource.query(`DELETE FROM accounts`);
+  await dataSource.query(`SET FOREIGN_KEY_CHECKS = 0`);
+  const tables = [
+    'project_other_expenses', 'project_rates', 'rate_card_entries', 'rate_cards',
+    'assignments', 'person_skills', 'person_tags', 'project_tags',
+    'project_milestones', 'project_phases', 'budget_roles',
+    'person_notes', 'project_notes', 'contracts', 'scheduled_leaves',
+    'person_managers', 'project_managers',
+    'people', 'projects', 'roles', 'skills', 'tags', 'teams', 'clients',
+    'user_sessions', 'users', 'accounts',
+  ];
+  for (const t of tables) {
+    await dataSource.query(`DELETE FROM ${t}`);
+  }
+  await dataSource.query(`SET FOREIGN_KEY_CHECKS = 1`);
   console.log('  Existing data cleared.');
 
   const accountRepo = dataSource.getRepository(AccountEntity);
@@ -242,7 +190,7 @@ async function seed() {
   // 3. Teams
   for (const name of TEAMS) {
     await dataSource.query(
-      `INSERT INTO teams (id, account_id, name) VALUES (gen_random_uuid(), $1, $2)`,
+      `INSERT INTO teams (id, account_id, name) VALUES (UUID(), ?, ?)`,
       [account.id, name],
     );
   }
@@ -252,7 +200,7 @@ async function seed() {
   for (const name of ROLES) {
     await dataSource.query(
       `INSERT INTO roles (id, account_id, name, default_hourly_rate, default_hourly_cost)
-       VALUES (gen_random_uuid(), $1, $2, 0, 0)`,
+       VALUES (UUID(), ?, ?, 0, 0)`,
       [account.id, name],
     );
   }
@@ -261,16 +209,16 @@ async function seed() {
   // 5. Clients
   for (const name of CLIENTS) {
     await dataSource.query(
-      `INSERT INTO clients (id, account_id, name) VALUES (gen_random_uuid(), $1, $2)`,
+      `INSERT INTO clients (id, account_id, name) VALUES (UUID(), ?, ?)`,
       [account.id, name],
     );
   }
   console.log(`  Clients: ${CLIENTS.join(', ')}`);
 
   // Fetch created IDs
-  const teamRows = await dataSource.query(`SELECT id, name FROM teams WHERE account_id = $1`, [account.id]);
-  const roleRows = await dataSource.query(`SELECT id, name FROM roles WHERE account_id = $1`, [account.id]);
-  const clientRows = await dataSource.query(`SELECT id, name FROM clients WHERE account_id = $1`, [account.id]);
+  const teamRows = await dataSource.query(`SELECT id, name FROM teams WHERE account_id = ?`, [account.id]);
+  const roleRows = await dataSource.query(`SELECT id, name FROM roles WHERE account_id = ?`, [account.id]);
+  const clientRows = await dataSource.query(`SELECT id, name FROM clients WHERE account_id = ?`, [account.id]);
 
   const teamMap: Record<string, string> = Object.fromEntries(teamRows.map((t: { id: string; name: string }) => [t.name, t.id]));
   const roleMap: Record<string, string> = Object.fromEntries(roleRows.map((r: { id: string; name: string }) => [r.name, r.id]));
@@ -280,15 +228,15 @@ async function seed() {
   for (const p of PEOPLE) {
     await dataSource.query(
       `INSERT INTO people (id, account_id, first_name, last_name, email, team_id)
-       VALUES (gen_random_uuid(), $1, $2, $3, $4, NULL)`,
-      [account.id, p.firstName, p.lastName, null],
+       VALUES (UUID(), ?, ?, ?, NULL, NULL)`,
+      [account.id, p.firstName, p.lastName],
     );
   }
   console.log(`  People: ${PEOPLE.length} people`);
 
   // 7. Contracts (one active contract per person)
   const personRows = await dataSource.query(
-    `SELECT id, first_name, last_name FROM people WHERE account_id = $1 ORDER BY first_name, last_name`,
+    `SELECT id, first_name, last_name FROM people WHERE account_id = ? ORDER BY first_name, last_name`,
     [account.id],
   );
   for (let i = 0; i < personRows.length; i++) {
@@ -296,7 +244,7 @@ async function seed() {
     const roleInfo = PEOPLE[i];
     await dataSource.query(
       `INSERT INTO contracts (id, account_id, person_id, role_id, employment_type, start_date, minutes_per_day, cost)
-       VALUES (gen_random_uuid(), $1, $2, $3, 'employee', '2026-01-01', 480, 0)`,
+       VALUES (UUID(), ?, ?, ?, 'employee', '2026-01-01', 480, 0)`,
       [account.id, person.id, roleMap[roleInfo.role]],
     );
   }
@@ -307,13 +255,13 @@ async function seed() {
     const proj = PROJECTS[i];
     await dataSource.query(
       `INSERT INTO projects (id, account_id, name, client_id, state, pricing_model, color, budget_total)
-       VALUES (gen_random_uuid(), $1, $2, $3, 'active', 'tm', $4, $5)`,
+       VALUES (UUID(), ?, ?, ?, 'active', 'tm', ?, ?)`,
       [
         account.id,
         proj.name,
         clientMap[proj.client],
         PROJECT_COLORS[i % PROJECT_COLORS.length],
-        proj.budget,
+        proj.budget ?? 0,
       ],
     );
   }
@@ -322,16 +270,16 @@ async function seed() {
   // 9. Rate cards
   await dataSource.query(
     `INSERT INTO rate_cards (id, account_id, name, card_type, rate_mode, is_default)
-     VALUES (gen_random_uuid(), $1, 'Standard', 'standard', 'per_role', true)`,
+     VALUES (UUID(), ?, 'Standard', 'standard', 'per_role', 1)`,
     [account.id],
   );
   await dataSource.query(
     `INSERT INTO rate_cards (id, account_id, name, card_type, rate_mode, is_default)
-     VALUES (gen_random_uuid(), $1, 'Internal', 'internal', 'per_role', false)`,
+     VALUES (UUID(), ?, 'Internal', 'internal', 'per_role', 0)`,
     [account.id],
   );
   const rateCardRows = await dataSource.query(
-    `SELECT id, name FROM rate_cards WHERE account_id = $1`,
+    `SELECT id, name FROM rate_cards WHERE account_id = ?`,
     [account.id],
   );
   const standardCard = rateCardRows.find((rc: { name: string }) => rc.name === 'Standard');
@@ -341,12 +289,12 @@ async function seed() {
   for (const roleName of ROLES) {
     await dataSource.query(
       `INSERT INTO rate_card_entries (id, rate_card_id, role_id, rate_hourly, rate_daily)
-       VALUES (gen_random_uuid(), $1, $2, 0, 0)`,
+       VALUES (UUID(), ?, ?, 0, 0)`,
       [standardCard.id, roleMap[roleName]],
     );
     await dataSource.query(
       `INSERT INTO rate_card_entries (id, rate_card_id, role_id, rate_hourly, rate_daily)
-       VALUES (gen_random_uuid(), $1, $2, 0, 0)`,
+       VALUES (UUID(), ?, ?, 0, 0)`,
       [internalCard.id, roleMap[roleName]],
     );
   }
@@ -354,13 +302,13 @@ async function seed() {
 
   // Link projects to Standard rate card
   await dataSource.query(
-    `UPDATE projects SET rate_card_id = $1 WHERE account_id = $2`,
+    `UPDATE projects SET rate_card_id = ? WHERE account_id = ?`,
     [standardCard.id, account.id],
   );
 
   // 10. Assignments
   const projRows = await dataSource.query(
-    `SELECT id, name FROM projects WHERE account_id = $1`,
+    `SELECT id, name FROM projects WHERE account_id = ?`,
     [account.id],
   );
   const projMap: Record<string, string> = Object.fromEntries(
@@ -374,7 +322,7 @@ async function seed() {
     if (!person || !projMap[a.project]) continue;
     await dataSource.query(
       `INSERT INTO assignments (id, account_id, person_id, project_id, role_id, start_date, end_date, minutes_per_day, is_billable)
-       VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, true)`,
+       VALUES (UUID(), ?, ?, ?, ?, ?, ?, ?, 1)`,
       [account.id, person.id, projMap[a.project], roleMap[roleInfo.role], a.start, a.end, a.mpd],
     );
     assignCount++;

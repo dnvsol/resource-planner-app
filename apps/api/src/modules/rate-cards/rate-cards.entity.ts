@@ -15,7 +15,7 @@ export class RateCardEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({ type: 'uuid', name: 'account_id' })
+  @Column({ type: 'char', length: 36, name: 'account_id' })
   accountId!: string;
 
   @Column({ type: 'varchar', length: 100 })
@@ -30,10 +30,10 @@ export class RateCardEntity {
   @Column({ type: 'boolean', name: 'is_default', default: false })
   isDefault!: boolean;
 
-  @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
+  @CreateDateColumn({ type: 'datetime', name: 'created_at' })
   createdAt!: Date;
 
-  @UpdateDateColumn({ type: 'timestamptz', name: 'updated_at' })
+  @UpdateDateColumn({ type: 'datetime', name: 'updated_at' })
   updatedAt!: Date;
 }
 
@@ -46,10 +46,10 @@ export class RateCardEntryEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({ type: 'uuid', name: 'rate_card_id' })
+  @Column({ type: 'char', length: 36, name: 'rate_card_id' })
   rateCardId!: string;
 
-  @Column({ type: 'uuid', name: 'role_id' })
+  @Column({ type: 'char', length: 36, name: 'role_id' })
   roleId!: string;
 
   @Column({ type: 'decimal', precision: 10, scale: 2, name: 'rate_hourly', default: 0 })
@@ -58,9 +58,9 @@ export class RateCardEntryEntity {
   @Column({ type: 'decimal', precision: 10, scale: 2, name: 'rate_daily', default: 0 })
   rateDaily!: number;
 
-  @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
+  @CreateDateColumn({ type: 'datetime', name: 'created_at' })
   createdAt!: Date;
 
-  @UpdateDateColumn({ type: 'timestamptz', name: 'updated_at' })
+  @UpdateDateColumn({ type: 'datetime', name: 'updated_at' })
   updatedAt!: Date;
 }

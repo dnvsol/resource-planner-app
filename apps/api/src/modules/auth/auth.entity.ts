@@ -13,7 +13,7 @@ export class UserEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({ type: 'uuid', name: 'account_id' })
+  @Column({ type: 'char', length: 36, name: 'account_id' })
   accountId!: string;
 
   @Column({ type: 'varchar', length: 255 })
@@ -34,13 +34,13 @@ export class UserEntity {
   @Column({ type: 'boolean', name: 'is_active', default: true })
   isActive!: boolean;
 
-  @Column({ type: 'timestamptz', name: 'last_login_at', nullable: true })
+  @Column({ type: 'datetime', name: 'last_login_at', nullable: true })
   lastLoginAt!: Date | null;
 
-  @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
+  @CreateDateColumn({ type: 'datetime', name: 'created_at' })
   createdAt!: Date;
 
-  @UpdateDateColumn({ type: 'timestamptz', name: 'updated_at' })
+  @UpdateDateColumn({ type: 'datetime', name: 'updated_at' })
   updatedAt!: Date;
 }
 
@@ -49,13 +49,13 @@ export class UserSessionEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({ type: 'uuid', name: 'user_id' })
+  @Column({ type: 'char', length: 36, name: 'user_id' })
   userId!: string;
 
   @Column({ type: 'varchar', length: 255, name: 'refresh_token_hash' })
   refreshTokenHash!: string;
 
-  @Column({ type: 'timestamptz', name: 'expires_at' })
+  @Column({ type: 'datetime', name: 'expires_at' })
   expiresAt!: Date;
 
   @Column({ type: 'varchar', length: 50, name: 'ip_address', nullable: true })
@@ -64,7 +64,7 @@ export class UserSessionEntity {
   @Column({ type: 'varchar', length: 500, name: 'user_agent', nullable: true })
   userAgent!: string | null;
 
-  @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
+  @CreateDateColumn({ type: 'datetime', name: 'created_at' })
   createdAt!: Date;
 
   @ManyToOne(() => UserEntity, { onDelete: 'CASCADE' })
@@ -89,7 +89,7 @@ export class AccountEntity {
   @Column({ type: 'varchar', length: 50, default: 'UTC' })
   timezone!: string;
 
-  @Column({ type: 'jsonb', name: 'working_days', default: '[1,2,3,4,5]' })
+  @Column({ type: 'json', name: 'working_days', default: '[1,2,3,4,5]' })
   workingDays!: number[];
 
   @Column({ type: 'int', name: 'minutes_per_day', default: 480 })
@@ -98,9 +98,9 @@ export class AccountEntity {
   @Column({ type: 'int', name: 'fiscal_year_start', default: 1 })
   fiscalYearStart!: number;
 
-  @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
+  @CreateDateColumn({ type: 'datetime', name: 'created_at' })
   createdAt!: Date;
 
-  @UpdateDateColumn({ type: 'timestamptz', name: 'updated_at' })
+  @UpdateDateColumn({ type: 'datetime', name: 'updated_at' })
   updatedAt!: Date;
 }

@@ -15,7 +15,7 @@ export class PersonEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({ type: 'uuid', name: 'account_id' })
+  @Column({ type: 'char', length: 36, name: 'account_id' })
   accountId!: string;
 
   @Column({ type: 'varchar', length: 100, name: 'first_name' })
@@ -30,7 +30,7 @@ export class PersonEntity {
   @Column({ type: 'varchar', length: 500, nullable: true, name: 'avatar_url' })
   avatarUrl!: string | null;
 
-  @Column({ type: 'uuid', nullable: true, name: 'team_id' })
+  @Column({ type: 'char', length: 36, nullable: true, name: 'team_id' })
   teamId!: string | null;
 
   @Column({ type: 'boolean', default: false, name: 'is_placeholder' })
@@ -39,13 +39,13 @@ export class PersonEntity {
   @Column({ type: 'boolean', default: false })
   archived!: boolean;
 
-  @Column({ type: 'jsonb', default: '{}', name: 'custom_fields' })
+  @Column({ type: 'json', default: '{}', name: 'custom_fields' })
   customFields!: Record<string, unknown>;
 
-  @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
+  @CreateDateColumn({ type: 'datetime', name: 'created_at' })
   createdAt!: Date;
 
-  @UpdateDateColumn({ type: 'timestamptz', name: 'updated_at' })
+  @UpdateDateColumn({ type: 'datetime', name: 'updated_at' })
   updatedAt!: Date;
 }
 
@@ -58,21 +58,21 @@ export class PersonNoteEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({ type: 'uuid', name: 'account_id' })
+  @Column({ type: 'char', length: 36, name: 'account_id' })
   accountId!: string;
 
-  @Column({ type: 'uuid', name: 'person_id' })
+  @Column({ type: 'char', length: 36, name: 'person_id' })
   personId!: string;
 
-  @Column({ type: 'uuid', nullable: true, name: 'user_id' })
+  @Column({ type: 'char', length: 36, nullable: true, name: 'user_id' })
   userId!: string | null;
 
   @Column({ type: 'text' })
   content!: string;
 
-  @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
+  @CreateDateColumn({ type: 'datetime', name: 'created_at' })
   createdAt!: Date;
 
-  @UpdateDateColumn({ type: 'timestamptz', name: 'updated_at' })
+  @UpdateDateColumn({ type: 'datetime', name: 'updated_at' })
   updatedAt!: Date;
 }

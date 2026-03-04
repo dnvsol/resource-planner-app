@@ -11,19 +11,19 @@ export class AssignmentEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({ type: 'uuid', name: 'account_id' })
+  @Column({ type: 'char', length: 36, name: 'account_id' })
   accountId!: string;
 
-  @Column({ type: 'uuid', name: 'person_id' })
+  @Column({ type: 'char', length: 36, name: 'person_id' })
   personId!: string;
 
-  @Column({ type: 'uuid', name: 'project_id' })
+  @Column({ type: 'char', length: 36, name: 'project_id' })
   projectId!: string;
 
-  @Column({ type: 'uuid', name: 'role_id' })
+  @Column({ type: 'char', length: 36, name: 'role_id' })
   roleId!: string;
 
-  @Column({ type: 'uuid', nullable: true, name: 'phase_id' })
+  @Column({ type: 'char', length: 36, nullable: true, name: 'phase_id' })
   phaseId!: string | null;
 
   @Column({ type: 'date', name: 'start_date' })
@@ -47,10 +47,10 @@ export class AssignmentEntity {
   @Column({ type: 'text', nullable: true })
   note!: string | null;
 
-  @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
+  @CreateDateColumn({ type: 'datetime', name: 'created_at' })
   createdAt!: Date;
 
-  @UpdateDateColumn({ type: 'timestamptz', name: 'updated_at' })
+  @UpdateDateColumn({ type: 'datetime', name: 'updated_at' })
   updatedAt!: Date;
 
   @Column({ type: 'int', default: 1 })

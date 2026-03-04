@@ -1,20 +1,22 @@
 services:
-  postgres:
-    image: postgres:16-alpine
+  mysql:
+    image: mysql:8.0
     environment:
-      POSTGRES_USER: dnvsol
-      POSTGRES_PASSWORD: dnvsol
-      POSTGRES_DB: dnvsol_dev
+      MYSQL_ROOT_PASSWORD: dnvsol
+      MYSQL_USER: dnvsol
+      MYSQL_PASSWORD: dnvsol
+      MYSQL_DATABASE: dnvsol_dev
     ports:
-      - '5432:5432'
+      - '3306:3306'
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - mysqldata:/var/lib/mysql
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U dnvsol']
+      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-u', 'root', '-pdnvsol']
       interval: 5s
       timeout: 5s
       retries: 5
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
 
 
 volumes:
-  pgdata:
+  mysqldata:

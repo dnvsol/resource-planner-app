@@ -6,18 +6,18 @@ import { DataSource, DataSourceOptions } from 'typeorm';
 import { env } from './env.js';
 
 const dataSourceOptions: DataSourceOptions = {
-  type: 'postgres',
+  type: 'mysql',
   url: env.DATABASE_URL,
   entities: [__dirname + '/../modules/**/*.entity.{ts,js}'],
   migrations: [__dirname + '/../migrations/*.{ts,js}'],
   synchronize: false,
   logging: env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
   migrationsRun: false,
-  ssl: env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  charset: 'utf8mb4',
   extra: {
-    max: 20,
-    idleTimeoutMillis: 30_000,
-    connectionTimeoutMillis: 5_000,
+    connectionLimit: 20,
+    waitForConnections: true,
+    connectTimeout: 5_000,
   },
 };
 

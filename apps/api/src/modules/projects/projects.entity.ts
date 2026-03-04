@@ -15,13 +15,13 @@ export class ProjectEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({ type: 'uuid', name: 'account_id' })
+  @Column({ type: 'char', length: 36, name: 'account_id' })
   accountId!: string;
 
   @Column({ type: 'varchar', length: 255 })
   name!: string;
 
-  @Column({ type: 'uuid', nullable: true, name: 'client_id' })
+  @Column({ type: 'char', length: 36, nullable: true, name: 'client_id' })
   clientId!: string | null;
 
   @Column({ type: 'varchar', default: 'active' })
@@ -45,16 +45,16 @@ export class ProjectEntity {
   @Column({ type: 'varchar', length: 7, nullable: true })
   color!: string | null;
 
-  @Column({ type: 'uuid', nullable: true, name: 'rate_card_id' })
+  @Column({ type: 'char', length: 36, nullable: true, name: 'rate_card_id' })
   rateCardId!: string | null;
 
-  @Column({ type: 'jsonb', default: '{}', name: 'custom_fields' })
+  @Column({ type: 'json', default: '{}', name: 'custom_fields' })
   customFields!: Record<string, unknown>;
 
-  @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
+  @CreateDateColumn({ type: 'datetime', name: 'created_at' })
   createdAt!: Date;
 
-  @UpdateDateColumn({ type: 'timestamptz', name: 'updated_at' })
+  @UpdateDateColumn({ type: 'datetime', name: 'updated_at' })
   updatedAt!: Date;
 }
 
@@ -67,10 +67,10 @@ export class ProjectPhaseEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({ type: 'uuid', name: 'account_id' })
+  @Column({ type: 'char', length: 36, name: 'account_id' })
   accountId!: string;
 
-  @Column({ type: 'uuid', name: 'project_id' })
+  @Column({ type: 'char', length: 36, name: 'project_id' })
   projectId!: string;
 
   @Column({ type: 'varchar', length: 255 })
@@ -91,10 +91,10 @@ export class ProjectPhaseEntity {
   @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true })
   budget!: number | null;
 
-  @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
+  @CreateDateColumn({ type: 'datetime', name: 'created_at' })
   createdAt!: Date;
 
-  @UpdateDateColumn({ type: 'timestamptz', name: 'updated_at' })
+  @UpdateDateColumn({ type: 'datetime', name: 'updated_at' })
   updatedAt!: Date;
 }
 
@@ -107,10 +107,10 @@ export class ProjectMilestoneEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({ type: 'uuid', name: 'account_id' })
+  @Column({ type: 'char', length: 36, name: 'account_id' })
   accountId!: string;
 
-  @Column({ type: 'uuid', name: 'project_id' })
+  @Column({ type: 'char', length: 36, name: 'project_id' })
   projectId!: string;
 
   @Column({ type: 'varchar', length: 255 })
@@ -122,10 +122,10 @@ export class ProjectMilestoneEntity {
   @Column({ type: 'varchar', length: 4, nullable: true })
   icon!: string | null;
 
-  @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
+  @CreateDateColumn({ type: 'datetime', name: 'created_at' })
   createdAt!: Date;
 
-  @UpdateDateColumn({ type: 'timestamptz', name: 'updated_at' })
+  @UpdateDateColumn({ type: 'datetime', name: 'updated_at' })
   updatedAt!: Date;
 }
 
@@ -138,22 +138,22 @@ export class ProjectNoteEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({ type: 'uuid', name: 'account_id' })
+  @Column({ type: 'char', length: 36, name: 'account_id' })
   accountId!: string;
 
-  @Column({ type: 'uuid', name: 'project_id' })
+  @Column({ type: 'char', length: 36, name: 'project_id' })
   projectId!: string;
 
-  @Column({ type: 'uuid', nullable: true, name: 'user_id' })
+  @Column({ type: 'char', length: 36, nullable: true, name: 'user_id' })
   userId!: string | null;
 
   @Column({ type: 'text' })
   content!: string;
 
-  @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
+  @CreateDateColumn({ type: 'datetime', name: 'created_at' })
   createdAt!: Date;
 
-  @UpdateDateColumn({ type: 'timestamptz', name: 'updated_at' })
+  @UpdateDateColumn({ type: 'datetime', name: 'updated_at' })
   updatedAt!: Date;
 }
 
@@ -166,13 +166,13 @@ export class BudgetRoleEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({ type: 'uuid', name: 'account_id' })
+  @Column({ type: 'char', length: 36, name: 'account_id' })
   accountId!: string;
 
-  @Column({ type: 'uuid', name: 'project_id' })
+  @Column({ type: 'char', length: 36, name: 'project_id' })
   projectId!: string;
 
-  @Column({ type: 'uuid', name: 'role_id' })
+  @Column({ type: 'char', length: 36, name: 'role_id' })
   roleId!: string;
 
   @Column({ type: 'integer', default: 0, name: 'budget_minutes' })
@@ -181,10 +181,10 @@ export class BudgetRoleEntity {
   @Column({ type: 'decimal', precision: 10, scale: 2, name: 'estimated_budget', default: 0 })
   estimatedBudget!: number;
 
-  @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
+  @CreateDateColumn({ type: 'datetime', name: 'created_at' })
   createdAt!: Date;
 
-  @UpdateDateColumn({ type: 'timestamptz', name: 'updated_at' })
+  @UpdateDateColumn({ type: 'datetime', name: 'updated_at' })
   updatedAt!: Date;
 }
 
@@ -197,10 +197,10 @@ export class ProjectRateEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({ type: 'uuid', name: 'project_id' })
+  @Column({ type: 'char', length: 36, name: 'project_id' })
   projectId!: string;
 
-  @Column({ type: 'uuid', name: 'role_id' })
+  @Column({ type: 'char', length: 36, name: 'role_id' })
   roleId!: string;
 
   @Column({ type: 'decimal', precision: 10, scale: 2, name: 'rate_hourly', default: 0 })
@@ -209,10 +209,10 @@ export class ProjectRateEntity {
   @Column({ type: 'decimal', precision: 10, scale: 2, name: 'rate_daily', default: 0 })
   rateDaily!: number;
 
-  @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
+  @CreateDateColumn({ type: 'datetime', name: 'created_at' })
   createdAt!: Date;
 
-  @UpdateDateColumn({ type: 'timestamptz', name: 'updated_at' })
+  @UpdateDateColumn({ type: 'datetime', name: 'updated_at' })
   updatedAt!: Date;
 }
 
@@ -225,10 +225,10 @@ export class OtherExpenseEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({ type: 'uuid', name: 'account_id' })
+  @Column({ type: 'char', length: 36, name: 'account_id' })
   accountId!: string;
 
-  @Column({ type: 'uuid', name: 'project_id' })
+  @Column({ type: 'char', length: 36, name: 'project_id' })
   projectId!: string;
 
   @Column({ type: 'varchar', length: 255 })
@@ -243,9 +243,9 @@ export class OtherExpenseEntity {
   @Column({ type: 'boolean', name: 'is_charge', default: true })
   isCharge!: boolean;
 
-  @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
+  @CreateDateColumn({ type: 'datetime', name: 'created_at' })
   createdAt!: Date;
 
-  @UpdateDateColumn({ type: 'timestamptz', name: 'updated_at' })
+  @UpdateDateColumn({ type: 'datetime', name: 'updated_at' })
   updatedAt!: Date;
 }

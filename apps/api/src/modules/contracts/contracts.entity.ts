@@ -11,13 +11,13 @@ export class ContractEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({ type: 'uuid', name: 'account_id' })
+  @Column({ type: 'char', length: 36, name: 'account_id' })
   accountId!: string;
 
-  @Column({ type: 'uuid', name: 'person_id' })
+  @Column({ type: 'char', length: 36, name: 'person_id' })
   personId!: string;
 
-  @Column({ type: 'uuid', name: 'role_id' })
+  @Column({ type: 'char', length: 36, name: 'role_id' })
   roleId!: string;
 
   @Column({
@@ -40,9 +40,9 @@ export class ContractEntity {
   @Column({ type: 'decimal', precision: 12, scale: 2, default: 0 })
   cost!: number;
 
-  @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
+  @CreateDateColumn({ type: 'datetime', name: 'created_at' })
   createdAt!: Date;
 
-  @UpdateDateColumn({ type: 'timestamptz', name: 'updated_at' })
+  @UpdateDateColumn({ type: 'datetime', name: 'updated_at' })
   updatedAt!: Date;
 }
