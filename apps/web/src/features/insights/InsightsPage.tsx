@@ -198,7 +198,7 @@ export function InsightsPage() {
       {/* Section 3: Utilization Summary */}
       <div className="mb-8 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
         <h2 className="mb-4 text-sm font-semibold text-gray-900">Utilization Summary</h2>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <SummaryCard
             title="Over Utilized"
             subtitle="> 100%"

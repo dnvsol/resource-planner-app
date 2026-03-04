@@ -103,7 +103,7 @@ export function DataTable<T extends { id?: string | number }>({
   // Loading state
   if (loading) {
     return (
-      <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+      <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
         <table className="min-w-full divide-y divide-gray-200">
           {headerRow}
           <tbody className="divide-y divide-gray-100">
@@ -119,7 +119,7 @@ export function DataTable<T extends { id?: string | number }>({
   // Empty state
   if (data.length === 0) {
     return (
-      <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+      <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
         <table className="min-w-full">
           {headerRow}
         </table>
@@ -133,7 +133,7 @@ export function DataTable<T extends { id?: string | number }>({
 
   // Data rows
   return (
-    <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+    <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
       <table className="min-w-full divide-y divide-gray-200">
         {headerRow}
         <tbody className="divide-y divide-gray-100">

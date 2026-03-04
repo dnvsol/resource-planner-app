@@ -164,7 +164,7 @@ function SnapshotTab({ project, viewMode }: { project: ProjectDetail; viewMode: 
             <FinCard label="Margin" value={financials.scheduledMargin > 0 ? `${financials.scheduledMargin.toFixed(0)}%` : '?'} color={financials.scheduledMargin >= 20 ? 'text-green-600' : 'text-orange-600'} tooltip="Profit as percentage of revenue" />
           </div>
         ) : (
-          <div className="grid grid-cols-3 gap-4 lg:grid-cols-6">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="h-20 animate-pulse rounded-lg bg-gray-100" />
             ))}
@@ -857,7 +857,7 @@ function DetailSkeleton() {
         <div className="h-7 w-56 rounded bg-gray-200" />
       </div>
       <div className="mb-6 h-10 w-full rounded bg-gray-100" />
-      <div className="grid grid-cols-3 gap-4 lg:grid-cols-6">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
         {Array.from({ length: 6 }).map((_, i) => (
           <div key={i} className="h-20 rounded-lg bg-gray-100" />
         ))}
