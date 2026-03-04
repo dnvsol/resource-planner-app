@@ -197,9 +197,9 @@ function buildMonthSpans(columns: ColumnInfo[]): { label: string; startIdx: numb
   return spans;
 }
 
-/** Build availability bar groups: per-week for day granularity, per-month for week granularity */
-function buildAvailGroups(columns: ColumnInfo[], granularity: 'day' | 'week'): AvailGroup[] {
-  if (granularity === 'week') {
+/** Build availability bar groups: per-week or per-month */
+function buildAvailGroups(columns: ColumnInfo[], availPer: 'week' | 'month'): AvailGroup[] {
+  if (availPer === 'month') {
     // Group by month
     const groups: AvailGroup[] = [];
     let currentLabel = '';
@@ -214,7 +214,7 @@ function buildAvailGroups(columns: ColumnInfo[], granularity: 'day' | 'week'): A
     }
     return groups;
   }
-  // Day granularity: group by ISO week (Mon-Sun)
+  // Per-week: group by ISO week (Mon-Sun)
   const groups: AvailGroup[] = [];
   let currentWeekKey = '';
   for (let i = 0; i < columns.length; i++) {
@@ -388,12 +388,12 @@ function getInitials(firstName: string, lastName: string): string {
 
 type PeriodKey = 'week' | 'month' | 'quarter' | 'half' | 'year';
 
-const PERIODS: { key: PeriodKey; label: string; days: number; granularity: 'day' | 'week' }[] = [
-  { key: 'week',    label: 'Week',      days: 7,   granularity: 'day' },
-  { key: 'month',   label: 'Month',     days: 35,  granularity: 'day' },
-  { key: 'quarter', label: 'Quarter',   days: 91,  granularity: 'day' },
-  { key: 'half',    label: 'Half Year', days: 182, granularity: 'week' },
-  { key: 'year',    label: 'Year',      days: 365, granularity: 'week' },
+const PERIODS: { key: PeriodKey; label: string; days: number; granularity: 'day' | 'week'; availPer: 'week' | 'month' }[] = [
+  { key: 'week',    label: 'Week',      days: 7,   granularity: 'day',  availPer: 'week' },
+  { key: 'month',   label: 'Month',     days: 35,  granularity: 'day',  availPer: 'week' },
+  { key: 'quarter', label: 'Quarter',   days: 91,  granularity: 'week', availPer: 'week' },
+  { key: 'half',    label: 'Half Year', days: 182, granularity: 'week', availPer: 'month' },
+  { key: 'year',    label: 'Year',      days: 365, granularity: 'week', availPer: 'month' },
 ];
 
 type SortKey = 'firstName' | 'lastName';
@@ -681,7 +681,7 @@ export function PlannerPage() {
   const timelineWidth = columns.length * colWidth;
 
   const monthSpans = useMemo(() => buildMonthSpans(columns), [columns]);
-  const availGroups = useMemo(() => buildAvailGroups(columns, periodCfg.granularity), [columns, periodCfg.granularity]);
+  const availGroups = useMemo(() => buildAvailGroups(columns, periodCfg.availPer), [columns, periodCfg.availPer]);
 
   // Weeks for availability calculation (always full weeks covering the period)
   const availWeeks = useMemo(() => generateWeeksForAvail(startDate, endDate), [startDate, endDate]);
