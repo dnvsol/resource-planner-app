@@ -124,8 +124,8 @@ export class PeopleService {
 
     // Insert tags if provided
     if (dto.tags && dto.tags.length > 0) {
-      const values = dto.tags.map((_, i) => `($1, $${i + 2})`).join(', ');
-      const params = [saved.id, ...dto.tags];
+      const values = dto.tags.map(() => `(?, ?)`).join(', ');
+      const params = dto.tags.flatMap((tagId: string) => [saved.id, tagId]);
       await this.dataSource.query(
         `INSERT INTO person_tags (person_id, tag_id) VALUES ${values} ON CONFLICT DO NOTHING`,
         params,
@@ -150,7 +150,7 @@ export class PeopleService {
       `SELECT c.*, r.name as role_name
        FROM contracts c
        LEFT JOIN roles r ON r.id = c.role_id
-       WHERE c.person_id = $1
+       WHERE c.person_id = ?
          AND c.start_date <= CURRENT_DATE
          AND (c.end_date IS NULL OR c.end_date >= CURRENT_DATE)
        LIMIT 1`,
@@ -162,7 +162,7 @@ export class PeopleService {
       `SELECT ps.skill_id, ps.level, s.name as skill_name
        FROM person_skills ps
        JOIN skills s ON s.id = ps.skill_id
-       WHERE ps.person_id = $1`,
+       WHERE ps.person_id = ?`,
       [personId],
     );
 
@@ -171,7 +171,7 @@ export class PeopleService {
       `SELECT pt.tag_id, t.name as tag_name
        FROM person_tags pt
        JOIN tags t ON t.id = pt.tag_id
-       WHERE pt.person_id = $1`,
+       WHERE pt.person_id = ?`,
       [personId],
     );
 
@@ -180,7 +180,7 @@ export class PeopleService {
       `SELECT pm.user_id, u.first_name, u.last_name, u.email
        FROM person_managers pm
        JOIN users u ON u.id = pm.user_id
-       WHERE pm.person_id = $1`,
+       WHERE pm.person_id = ?`,
       [personId],
     );
 
@@ -190,7 +190,7 @@ export class PeopleService {
               u.first_name as author_first_name, u.last_name as author_last_name
        FROM person_notes pn
        LEFT JOIN users u ON u.id = pn.user_id
-       WHERE pn.person_id = $1 AND pn.account_id = $2
+       WHERE pn.person_id = ? AND pn.account_id = ?
        ORDER BY pn.created_at DESC
        LIMIT 10`,
       [personId, accountId],
@@ -228,10 +228,10 @@ export class PeopleService {
 
     // Replace tags if provided
     if (dto.tags !== undefined) {
-      await this.dataSource.query(`DELETE FROM person_tags WHERE person_id = $1`, [personId]);
+      await this.dataSource.query(`DELETE FROM person_tags WHERE person_id = ?`, [personId]);
       if (dto.tags.length > 0) {
-        const values = dto.tags.map((_, i) => `($1, $${i + 2})`).join(', ');
-        const params = [personId, ...dto.tags];
+        const values = dto.tags.map(() => `(?, ?)`).join(', ');
+        const params = dto.tags.flatMap((tagId: string) => [personId, tagId]);
         await this.dataSource.query(
           `INSERT INTO person_tags (person_id, tag_id) VALUES ${values} ON CONFLICT DO NOTHING`,
           params,
@@ -255,7 +255,7 @@ export class PeopleService {
     // Check no active assignments
     const result = await this.dataSource.query(
       `SELECT COUNT(*) as count FROM assignments
-       WHERE person_id = $1
+       WHERE person_id = ?
          AND start_date <= CURRENT_DATE
          AND end_date >= CURRENT_DATE`,
       [personId],
@@ -311,7 +311,7 @@ export class PeopleService {
 
     if (people.length !== dto.ids.length) {
       const foundIds = new Set(people.map((p) => p.id));
-      const missingIds = dto.ids.filter((id) => !foundIds.has(id));
+      const missingIds = dto.ids.filter((id: string) => !foundIds.has(id));
       throw BusinessException.notFound('Person', missingIds.join(', '));
     }
 
@@ -329,10 +329,10 @@ export class PeopleService {
 
       // Replace tags if provided
       if (dto.updates.tags !== undefined) {
-        await this.dataSource.query(`DELETE FROM person_tags WHERE person_id = $1`, [person.id]);
+        await this.dataSource.query(`DELETE FROM person_tags WHERE person_id = ?`, [person.id]);
         if (dto.updates.tags.length > 0) {
-          const values = dto.updates.tags.map((_, i) => `($1, $${i + 2})`).join(', ');
-          const params = [person.id, ...dto.updates.tags];
+          const values = dto.updates.tags.map(() => `(?, ?)`).join(', ');
+          const params = dto.updates.tags.flatMap((tagId: string) => [person.id, tagId]);
           await this.dataSource.query(
             `INSERT INTO person_tags (person_id, tag_id) VALUES ${values} ON CONFLICT DO NOTHING`,
             params,
@@ -359,13 +359,13 @@ export class PeopleService {
 
     // Verify user exists in this account
     const user = await this.dataSource.query(
-      `SELECT id FROM users WHERE id = $1 AND account_id = $2`,
+      `SELECT id FROM users WHERE id = ? AND account_id = ?`,
       [userId, accountId],
     );
     if (!user || user.length === 0) throw BusinessException.notFound('User', userId);
 
     await this.dataSource.query(
-      `INSERT INTO person_managers (person_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+      `INSERT INTO person_managers (person_id, user_id) VALUES (?, ?) ON CONFLICT DO NOTHING`,
       [personId, userId],
     );
   }
@@ -378,7 +378,7 @@ export class PeopleService {
     if (!person) throw BusinessException.notFound('Person', personId);
 
     await this.dataSource.query(
-      `DELETE FROM person_managers WHERE person_id = $1 AND user_id = $2`,
+      `DELETE FROM person_managers WHERE person_id = ? AND user_id = ?`,
       [personId, userId],
     );
   }
@@ -395,14 +395,11 @@ export class PeopleService {
     if (!person) throw BusinessException.notFound('Person', personId);
 
     // Replace all skills for this person
-    await this.dataSource.query(`DELETE FROM person_skills WHERE person_id = $1`, [personId]);
+    await this.dataSource.query(`DELETE FROM person_skills WHERE person_id = ?`, [personId]);
 
     if (skills.length > 0) {
-      const values = skills.map((_, i) => `($1, $${i * 2 + 2}, $${i * 2 + 3})`).join(', ');
-      const params: (string | number)[] = [personId];
-      for (const skill of skills) {
-        params.push(skill.skillId, skill.level ?? 1);
-      }
+      const values = skills.map(() => `(?, ?, ?)`).join(', ');
+      const params: (string | number)[] = skills.flatMap((skill: PersonSkillInput) => [personId, skill.skillId, skill.level ?? 1]);
       await this.dataSource.query(
         `INSERT INTO person_skills (person_id, skill_id, level) VALUES ${values}`,
         params,
@@ -418,9 +415,9 @@ export class PeopleService {
     if (!person) throw BusinessException.notFound('Person', personId);
 
     await this.dataSource.query(
-      `INSERT INTO person_skills (person_id, skill_id, level) VALUES ($1, $2, $3)
-       ON CONFLICT (person_id, skill_id) DO UPDATE SET level = $3`,
-      [personId, dto.skillId, dto.level ?? 1],
+      `INSERT INTO person_skills (person_id, skill_id, level) VALUES (?, ?, ?)
+       ON CONFLICT (person_id, skill_id) DO UPDATE SET level = ?`,
+      [personId, dto.skillId, dto.level ?? 1, dto.level ?? 1],
     );
   }
 
@@ -432,7 +429,7 @@ export class PeopleService {
     if (!person) throw BusinessException.notFound('Person', personId);
 
     await this.dataSource.query(
-      `DELETE FROM person_skills WHERE person_id = $1 AND skill_id = $2`,
+      `DELETE FROM person_skills WHERE person_id = ? AND skill_id = ?`,
       [personId, skillId],
     );
   }
@@ -449,7 +446,7 @@ export class PeopleService {
     if (!person) throw BusinessException.notFound('Person', personId);
 
     await this.dataSource.query(
-      `INSERT INTO person_tags (person_id, tag_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+      `INSERT INTO person_tags (person_id, tag_id) VALUES (?, ?) ON CONFLICT DO NOTHING`,
       [personId, tagId],
     );
   }
@@ -462,7 +459,7 @@ export class PeopleService {
     if (!person) throw BusinessException.notFound('Person', personId);
 
     await this.dataSource.query(
-      `DELETE FROM person_tags WHERE person_id = $1 AND tag_id = $2`,
+      `DELETE FROM person_tags WHERE person_id = ? AND tag_id = ?`,
       [personId, tagId],
     );
   }

@@ -62,7 +62,7 @@ export class RateCardsService {
               r.name as role_name
        FROM rate_card_entries rce
        JOIN roles r ON r.id = rce.role_id
-       WHERE rce.rate_card_id = $1
+       WHERE rce.rate_card_id = ?
        ORDER BY r.name ASC`,
       [rateCardId],
     );
@@ -114,7 +114,7 @@ export class RateCardsService {
     // Cannot delete if referenced by active projects
     const refs = await this.dataSource.query(
       `SELECT COUNT(*) as count FROM projects
-       WHERE rate_card_id = $1 AND state = 'active'`,
+       WHERE rate_card_id = ? AND state = 'active'`,
       [rateCardId],
     );
     if (refs[0] && parseInt(refs[0].count, 10) > 0) {

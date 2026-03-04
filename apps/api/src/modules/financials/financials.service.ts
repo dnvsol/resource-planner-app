@@ -79,7 +79,7 @@ export class FinancialsService {
       `SELECT p.id, p.name, p.pricing_model, c.name as client_name
        FROM projects p
        LEFT JOIN clients c ON c.id = p.client_id
-       WHERE p.account_id = $1 AND p.state = 'active'
+       WHERE p.account_id = ? AND p.state = 'active'
        ORDER BY p.name ASC`,
       [accountId],
     );
@@ -112,7 +112,7 @@ export class FinancialsService {
       `SELECT p.id, p.name, p.pricing_model, c.name as client_name
        FROM projects p
        LEFT JOIN clients c ON c.id = p.client_id
-       WHERE p.id = $1 AND p.account_id = $2`,
+       WHERE p.id = ? AND p.account_id = ?`,
       [projectId, accountId],
     );
 
@@ -146,16 +146,17 @@ export class FinancialsService {
     const personIds = utilData.map((u) => u.personId);
 
     // Load person details
+    const placeholders = personIds.map(() => '?').join(', ');
     const people = await this.dataSource.query(
-      `SELECT p.id, p.first_name || ' ' || p.last_name as name,
+      `SELECT p.id, CONCAT(p.first_name, ' ', p.last_name) as name,
               t.name as team_name, r.name as role_name
        FROM people p
        LEFT JOIN teams t ON t.id = p.team_id
        LEFT JOIN contracts c ON c.person_id = p.id AND c.account_id = p.account_id
-         AND c.start_date <= $3 AND (c.end_date IS NULL OR c.end_date >= $2)
+         AND c.start_date <= ? AND (c.end_date IS NULL OR c.end_date >= ?)
        LEFT JOIN roles r ON r.id = c.role_id
-       WHERE p.id = ANY($1)`,
-      [personIds, dateRange.startDate, dateRange.endDate],
+       WHERE p.id IN (${placeholders})`,
+      [dateRange.endDate, dateRange.startDate, ...personIds],
     );
 
     const personMap = new Map<string, { name: string; team: string | null; role: string | null }>();
@@ -185,7 +186,7 @@ export class FinancialsService {
       `SELECT p.id, p.client_id, COALESCE(c.name, 'No Client') as client_name
        FROM projects p
        LEFT JOIN clients c ON c.id = p.client_id
-       WHERE p.account_id = $1 AND p.state = 'active'
+       WHERE p.account_id = ? AND p.state = 'active'
        ORDER BY client_name ASC`,
       [accountId],
     );

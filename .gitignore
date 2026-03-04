@@ -8,3 +8,4 @@ coverage/
 e2e-screenshots/
 .playwright-mcp/
 *.png
+*.tsbuildinfo

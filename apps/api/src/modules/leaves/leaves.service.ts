@@ -210,7 +210,7 @@ export class LeavesService {
 
     if (leaves.length !== dto.ids.length) {
       const foundIds = new Set(leaves.map((l) => l.id));
-      const missingIds = dto.ids.filter((id) => !foundIds.has(id));
+      const missingIds = dto.ids.filter((id: string) => !foundIds.has(id));
       throw BusinessException.notFound('ScheduledLeave', missingIds.join(', '));
     }
 
@@ -231,15 +231,15 @@ export class LeavesService {
     let excludeClause = '';
 
     if (excludeId) {
-      excludeClause = ' AND id != $4';
+      excludeClause = ' AND id != ?';
       params.push(excludeId);
     }
 
     const result = await this.dataSource.query(
       `SELECT COUNT(*) as count FROM scheduled_leaves
-       WHERE person_id = $1
-         AND start_date <= $3
-         AND end_date >= $2${excludeClause}`,
+       WHERE person_id = ?
+         AND start_date <= ?
+         AND end_date >= ?${excludeClause}`,
       params,
     );
 

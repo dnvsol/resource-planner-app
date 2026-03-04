@@ -136,23 +136,23 @@ export class ContractsService {
       // New contract has an end date
       query = `
         SELECT id FROM contracts
-        WHERE person_id = $1
-          AND start_date <= $3
-          AND (end_date IS NULL OR end_date >= $2)
+        WHERE person_id = ?
+          AND start_date <= ?
+          AND (end_date IS NULL OR end_date >= ?)
       `;
       params.push(endDate);
     } else {
       // New contract is open-ended — overlaps anything that hasn't ended before start
       query = `
         SELECT id FROM contracts
-        WHERE person_id = $1
-          AND (end_date IS NULL OR end_date >= $2)
+        WHERE person_id = ?
+          AND (end_date IS NULL OR end_date >= ?)
       `;
     }
 
     if (excludeId) {
       params.push(excludeId);
-      query += `  AND id != $${params.length}\n`;
+      query += `  AND id != ?\n`;
     }
 
     query += '  LIMIT 1';

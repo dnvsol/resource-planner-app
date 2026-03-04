@@ -131,7 +131,7 @@ export class AssignmentsService {
 
     // Validate person exists in account
     const personRows = await this.dataSource.query(
-      `SELECT id FROM people WHERE id = $1 AND account_id = $2`,
+      `SELECT id FROM people WHERE id = ? AND account_id = ?`,
       [dto.personId, accountId],
     );
     if (!personRows || personRows.length === 0) {
@@ -140,7 +140,7 @@ export class AssignmentsService {
 
     // Validate project exists in account
     const projectRows = await this.dataSource.query(
-      `SELECT id FROM projects WHERE id = $1 AND account_id = $2`,
+      `SELECT id FROM projects WHERE id = ? AND account_id = ?`,
       [dto.projectId, accountId],
     );
     if (!projectRows || projectRows.length === 0) {
@@ -195,13 +195,13 @@ export class AssignmentsService {
 
     // Fetch person info
     const personRows: Record<string, unknown>[] = await this.dataSource.query(
-      `SELECT first_name, last_name FROM people WHERE id = $1`,
+      `SELECT first_name, last_name FROM people WHERE id = ?`,
       [assignment.personId],
     );
 
     // Fetch project info
     const projectRows: Record<string, unknown>[] = await this.dataSource.query(
-      `SELECT name FROM projects WHERE id = $1`,
+      `SELECT name FROM projects WHERE id = ?`,
       [assignment.projectId],
     );
 
@@ -341,7 +341,7 @@ export class AssignmentsService {
 
     // Validate new project exists in account
     const projectRows = await this.dataSource.query(
-      `SELECT id FROM projects WHERE id = $1 AND account_id = $2`,
+      `SELECT id FROM projects WHERE id = ? AND account_id = ?`,
       [newProjectId, accountId],
     );
     if (!projectRows || projectRows.length === 0) {

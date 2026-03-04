@@ -117,8 +117,8 @@ export class ProjectsService {
 
     // Insert tags if provided
     if (dto.tags && dto.tags.length > 0) {
-      const values = dto.tags.map((_, i) => `($1, $${i + 2})`).join(', ');
-      const params = [saved.id, ...dto.tags];
+      const values = dto.tags.map(() => `(?, ?)`).join(', ');
+      const params = dto.tags.flatMap((tagId: string) => [saved.id, tagId]);
       await this.dataSource.query(
         `INSERT INTO project_tags (project_id, tag_id) VALUES ${values} ON CONFLICT DO NOTHING`,
         params,
@@ -142,7 +142,7 @@ export class ProjectsService {
     const clients: Record<string, unknown>[] = await this.dataSource.query(
       `SELECT c.id, c.name
        FROM clients c
-       WHERE c.id = $1`,
+       WHERE c.id = ?`,
       [project.clientId],
     );
 
@@ -151,7 +151,7 @@ export class ProjectsService {
       `SELECT pp.id, pp.name, pp.start_date, pp.end_date, pp.color, pp.sort_order,
               pp.created_at, pp.updated_at
        FROM project_phases pp
-       WHERE pp.project_id = $1 AND pp.account_id = $2
+       WHERE pp.project_id = ? AND pp.account_id = ?
        ORDER BY pp.sort_order ASC, pp.created_at ASC`,
       [projectId, accountId],
     );
@@ -160,7 +160,7 @@ export class ProjectsService {
     const milestones: Record<string, unknown>[] = await this.dataSource.query(
       `SELECT pm.id, pm.name, pm.date, pm.icon, pm.created_at, pm.updated_at
        FROM project_milestones pm
-       WHERE pm.project_id = $1 AND pm.account_id = $2
+       WHERE pm.project_id = ? AND pm.account_id = ?
        ORDER BY pm.date ASC`,
       [projectId, accountId],
     );
@@ -171,7 +171,7 @@ export class ProjectsService {
               u.first_name as author_first_name, u.last_name as author_last_name
        FROM project_notes pn
        LEFT JOIN users u ON u.id = pn.user_id
-       WHERE pn.project_id = $1 AND pn.account_id = $2
+       WHERE pn.project_id = ? AND pn.account_id = ?
        ORDER BY pn.created_at DESC
        LIMIT 10`,
       [projectId, accountId],
@@ -182,7 +182,7 @@ export class ProjectsService {
       `SELECT pt.tag_id, t.name as tag_name
        FROM project_tags pt
        JOIN tags t ON t.id = pt.tag_id
-       WHERE pt.project_id = $1`,
+       WHERE pt.project_id = ?`,
       [projectId],
     );
 
@@ -191,7 +191,7 @@ export class ProjectsService {
       `SELECT pm.user_id, u.first_name, u.last_name, u.email
        FROM project_managers pm
        JOIN users u ON u.id = pm.user_id
-       WHERE pm.project_id = $1`,
+       WHERE pm.project_id = ?`,
       [projectId],
     );
 
@@ -201,7 +201,7 @@ export class ProjectsService {
               r.name as role_name, br.created_at, br.updated_at
        FROM budget_roles br
        JOIN roles r ON r.id = br.role_id
-       WHERE br.project_id = $1 AND br.account_id = $2`,
+       WHERE br.project_id = ? AND br.account_id = ?`,
       [projectId, accountId],
     );
 
@@ -211,7 +211,7 @@ export class ProjectsService {
               r.name as role_name, pr.created_at, pr.updated_at
        FROM project_rates pr
        JOIN roles r ON r.id = pr.role_id
-       WHERE pr.project_id = $1
+       WHERE pr.project_id = ?
        ORDER BY r.name ASC`,
       [projectId],
     );
@@ -220,7 +220,7 @@ export class ProjectsService {
     const otherExpenses: Record<string, unknown>[] = await this.dataSource.query(
       `SELECT id, description, amount, date, is_charge, created_at, updated_at
        FROM project_other_expenses
-       WHERE project_id = $1 AND account_id = $2
+       WHERE project_id = ? AND account_id = ?
        ORDER BY date ASC`,
       [projectId, accountId],
     );
@@ -263,10 +263,10 @@ export class ProjectsService {
 
     // Replace tags if provided
     if (dto.tags !== undefined) {
-      await this.dataSource.query(`DELETE FROM project_tags WHERE project_id = $1`, [projectId]);
+      await this.dataSource.query(`DELETE FROM project_tags WHERE project_id = ?`, [projectId]);
       if (dto.tags.length > 0) {
-        const values = dto.tags.map((_, i) => `($1, $${i + 2})`).join(', ');
-        const params = [projectId, ...dto.tags];
+        const values = dto.tags.map(() => `(?, ?)`).join(', ');
+        const params = dto.tags.flatMap((tagId: string) => [projectId, tagId]);
         await this.dataSource.query(
           `INSERT INTO project_tags (project_id, tag_id) VALUES ${values} ON CONFLICT DO NOTHING`,
           params,
@@ -290,7 +290,7 @@ export class ProjectsService {
     // Check no active assignments
     const result = await this.dataSource.query(
       `SELECT COUNT(*) as count FROM assignments
-       WHERE project_id = $1
+       WHERE project_id = ?
          AND start_date <= CURRENT_DATE
          AND end_date >= CURRENT_DATE`,
       [projectId],
@@ -473,7 +473,7 @@ export class ProjectsService {
     if (!project) throw BusinessException.notFound('Project', projectId);
 
     await this.dataSource.query(
-      `INSERT INTO project_tags (project_id, tag_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+      `INSERT INTO project_tags (project_id, tag_id) VALUES (?, ?) ON CONFLICT DO NOTHING`,
       [projectId, tagId],
     );
   }
@@ -486,7 +486,7 @@ export class ProjectsService {
     if (!project) throw BusinessException.notFound('Project', projectId);
 
     await this.dataSource.query(
-      `DELETE FROM project_tags WHERE project_id = $1 AND tag_id = $2`,
+      `DELETE FROM project_tags WHERE project_id = ? AND tag_id = ?`,
       [projectId, tagId],
     );
   }
@@ -504,13 +504,13 @@ export class ProjectsService {
 
     // Verify user exists in this account
     const user = await this.dataSource.query(
-      `SELECT id FROM users WHERE id = $1 AND account_id = $2`,
+      `SELECT id FROM users WHERE id = ? AND account_id = ?`,
       [userId, accountId],
     );
     if (!user || user.length === 0) throw BusinessException.notFound('User', userId);
 
     await this.dataSource.query(
-      `INSERT INTO project_managers (project_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+      `INSERT INTO project_managers (project_id, user_id) VALUES (?, ?) ON CONFLICT DO NOTHING`,
       [projectId, userId],
     );
   }
@@ -523,7 +523,7 @@ export class ProjectsService {
     if (!project) throw BusinessException.notFound('Project', projectId);
 
     await this.dataSource.query(
-      `DELETE FROM project_managers WHERE project_id = $1 AND user_id = $2`,
+      `DELETE FROM project_managers WHERE project_id = ? AND user_id = ?`,
       [projectId, userId],
     );
   }
@@ -541,18 +541,15 @@ export class ProjectsService {
 
     // Replace all budget roles for this project
     await this.dataSource.query(
-      `DELETE FROM budget_roles WHERE project_id = $1 AND account_id = $2`,
+      `DELETE FROM budget_roles WHERE project_id = ? AND account_id = ?`,
       [projectId, accountId],
     );
 
     if (roles.length > 0) {
       const values = roles
-        .map((_, i) => `($1, $2, $${i * 3 + 3}, $${i * 3 + 4}, $${i * 3 + 5})`)
+        .map(() => `(?, ?, ?, ?, ?)`)
         .join(', ');
-      const params: (string | number)[] = [accountId, projectId];
-      for (const role of roles) {
-        params.push(role.roleId, role.estimatedMinutes ?? 0, role.estimatedBudget ?? 0);
-      }
+      const params: (string | number)[] = roles.flatMap((role: BudgetRoleInput) => [accountId, projectId, role.roleId, role.estimatedMinutes ?? 0, role.estimatedBudget ?? 0]);
       await this.dataSource.query(
         `INSERT INTO budget_roles (account_id, project_id, role_id, budget_minutes, estimated_budget) VALUES ${values}`,
         params,
@@ -653,18 +650,15 @@ export class ProjectsService {
 
     // Replace all project rates (bulk upsert via delete + insert)
     await this.dataSource.query(
-      `DELETE FROM project_rates WHERE project_id = $1`,
+      `DELETE FROM project_rates WHERE project_id = ?`,
       [projectId],
     );
 
     if (rates.length > 0) {
       const values = rates
-        .map((_, i) => `($1, $${i * 3 + 2}, $${i * 3 + 3}, $${i * 3 + 4})`)
+        .map(() => `(?, ?, ?, ?)`)
         .join(', ');
-      const params: (string | number)[] = [projectId];
-      for (const rate of rates) {
-        params.push(rate.roleId, rate.rateHourly ?? 0, rate.rateDaily ?? 0);
-      }
+      const params: (string | number)[] = rates.flatMap((rate: ProjectRateInput) => [projectId, rate.roleId, rate.rateHourly ?? 0, rate.rateDaily ?? 0]);
       await this.dataSource.query(
         `INSERT INTO project_rates (project_id, role_id, rate_hourly, rate_daily) VALUES ${values}`,
         params,

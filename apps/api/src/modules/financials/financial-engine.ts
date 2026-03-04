@@ -118,7 +118,7 @@ export class FinancialEngine {
     // 1. Load project
     const projects = await this.dataSource.query(
       `SELECT id, pricing_model, budget_total, expenses_budget, rate_card_id
-       FROM projects WHERE id = $1 AND account_id = $2`,
+       FROM projects WHERE id = ? AND account_id = ?`,
       [projectId, accountId],
     );
     if (!projects[0]) {
@@ -133,20 +133,20 @@ export class FinancialEngine {
       ? `SELECT a.id, a.person_id, a.role_id, a.start_date, a.end_date,
                 a.minutes_per_day, a.is_billable
          FROM assignments a
-         WHERE a.project_id = $1 AND a.account_id = $2
-           AND a.start_date <= $4 AND a.end_date >= $3`
+         WHERE a.project_id = ? AND a.account_id = ?
+           AND a.start_date <= ? AND a.end_date >= ?`
       : `SELECT a.id, a.person_id, a.role_id, a.start_date, a.end_date,
                 a.minutes_per_day, a.is_billable
          FROM assignments a
-         WHERE a.project_id = $1 AND a.account_id = $2`;
+         WHERE a.project_id = ? AND a.account_id = ?`;
     const assignmentParams: string[] = dateRange
-      ? [projectId, accountId, dateRange.startDate, dateRange.endDate]
+      ? [projectId, accountId, dateRange.endDate, dateRange.startDate]
       : [projectId, accountId];
     const assignments = await this.dataSource.query(assignmentQuery, assignmentParams);
 
     // 3. Load project rate overrides
     const projectRates = await this.dataSource.query(
-      `SELECT role_id, rate_hourly FROM project_rates WHERE project_id = $1`,
+      `SELECT role_id, rate_hourly FROM project_rates WHERE project_id = ?`,
       [projectId],
     );
     const projectRateMap = new Map<string, number>();
@@ -158,7 +158,7 @@ export class FinancialEngine {
     const rateCardEntryMap = new Map<string, number>();
     if (project.rate_card_id) {
       const rateCardEntries = await this.dataSource.query(
-        `SELECT role_id, rate_hourly FROM rate_card_entries WHERE rate_card_id = $1`,
+        `SELECT role_id, rate_hourly FROM rate_card_entries WHERE rate_card_id = ?`,
         [project.rate_card_id],
       );
       for (const rce of rateCardEntries) {
@@ -168,7 +168,7 @@ export class FinancialEngine {
 
     // 5. Load role defaults
     const roles = await this.dataSource.query(
-      `SELECT id, default_hourly_rate, default_hourly_cost FROM roles WHERE account_id = $1`,
+      `SELECT id, default_hourly_rate, default_hourly_cost FROM roles WHERE account_id = ?`,
       [accountId],
     );
     const roleDefaultRateMap = new Map<string, number>();
@@ -182,12 +182,18 @@ export class FinancialEngine {
     const personIds = [...new Set(assignments.map((a: any) => a.person_id))];
     const costRateMap = new Map<string, number>();
     if (personIds.length > 0) {
+      const placeholders = personIds.map(() => '?').join(', ');
       const contracts = await this.dataSource.query(
-        `SELECT DISTINCT ON (person_id) person_id, cost
-         FROM contracts
-         WHERE account_id = $1 AND person_id = ANY($2)
-         ORDER BY person_id, start_date DESC`,
-        [accountId, personIds],
+        `SELECT c1.person_id, c1.cost
+         FROM contracts c1
+         INNER JOIN (
+           SELECT person_id, MAX(start_date) as max_start
+           FROM contracts
+           WHERE account_id = ? AND person_id IN (${placeholders})
+           GROUP BY person_id
+         ) c2 ON c1.person_id = c2.person_id AND c1.start_date = c2.max_start
+         WHERE c1.account_id = ?`,
+        [accountId, ...personIds, accountId],
       );
       for (const c of contracts) {
         costRateMap.set(c.person_id, parseFloat(c.cost) || 0);
@@ -197,10 +203,10 @@ export class FinancialEngine {
     // 7. Load other expenses
     const expenseQuery = dateRange
       ? `SELECT amount, is_charge FROM project_other_expenses
-         WHERE project_id = $1 AND account_id = $2
-           AND date >= $3 AND date <= $4`
+         WHERE project_id = ? AND account_id = ?
+           AND date >= ? AND date <= ?`
       : `SELECT amount, is_charge FROM project_other_expenses
-         WHERE project_id = $1 AND account_id = $2`;
+         WHERE project_id = ? AND account_id = ?`;
     const expenseParams = dateRange
       ? [projectId, accountId, dateRange.startDate, dateRange.endDate]
       : [projectId, accountId];
@@ -331,11 +337,11 @@ export class FinancialEngine {
               c.end_date as contract_end
        FROM people p
        JOIN contracts c ON c.person_id = p.id AND c.account_id = p.account_id
-       WHERE p.account_id = $1 AND p.archived = false
-         AND c.start_date <= $3
-         AND (c.end_date IS NULL OR c.end_date >= $2)
+       WHERE p.account_id = ? AND p.archived = false
+         AND c.start_date <= ?
+         AND (c.end_date IS NULL OR c.end_date >= ?)
        ORDER BY p.id, c.start_date DESC`,
-      [accountId, dateRange.startDate, dateRange.endDate],
+      [accountId, dateRange.endDate, dateRange.startDate],
     );
 
     // Deduplicate to get one contract per person (latest)
@@ -355,21 +361,22 @@ export class FinancialEngine {
     const personIds = [...personContracts.keys()];
 
     // 2. Load assignments for all people in date range
+    const personPlaceholders = personIds.map(() => '?').join(', ');
     const assignments = await this.dataSource.query(
       `SELECT person_id, start_date, end_date, minutes_per_day, is_billable
        FROM assignments
-       WHERE account_id = $1 AND person_id = ANY($2)
-         AND start_date <= $4 AND end_date >= $3`,
-      [accountId, personIds, dateRange.startDate, dateRange.endDate],
+       WHERE account_id = ? AND person_id IN (${personPlaceholders})
+         AND start_date <= ? AND end_date >= ?`,
+      [accountId, ...personIds, dateRange.endDate, dateRange.startDate],
     );
 
     // 3. Load leaves for all people in date range
     const leaves = await this.dataSource.query(
       `SELECT person_id, start_date, end_date, minutes_per_day
        FROM scheduled_leaves
-       WHERE account_id = $1 AND person_id = ANY($2)
-         AND start_date <= $4 AND end_date >= $3`,
-      [accountId, personIds, dateRange.startDate, dateRange.endDate],
+       WHERE account_id = ? AND person_id IN (${personPlaceholders})
+         AND start_date <= ? AND end_date >= ?`,
+      [accountId, ...personIds, dateRange.endDate, dateRange.startDate],
     );
 
     // 4. Calculate per-person
@@ -457,10 +464,10 @@ export class FinancialEngine {
         `SELECT p.id as person_id, c.minutes_per_day as contract_mpd
          FROM people p
          JOIN contracts c ON c.person_id = p.id AND c.account_id = p.account_id
-         WHERE p.account_id = $1 AND p.archived = false
-           AND c.start_date <= $3
-           AND (c.end_date IS NULL OR c.end_date >= $2)`,
-        [accountId, p.startDate, p.endDate],
+         WHERE p.account_id = ? AND p.archived = false
+           AND c.start_date <= ?
+           AND (c.end_date IS NULL OR c.end_date >= ?)`,
+        [accountId, p.endDate, p.startDate],
       );
 
       // Deduplicate
@@ -484,9 +491,9 @@ export class FinancialEngine {
       const assignments = await this.dataSource.query(
         `SELECT start_date, end_date, minutes_per_day
          FROM assignments
-         WHERE account_id = $1
-           AND start_date <= $3 AND end_date >= $2`,
-        [accountId, p.startDate, p.endDate],
+         WHERE account_id = ?
+           AND start_date <= ? AND end_date >= ?`,
+        [accountId, p.endDate, p.startDate],
       );
 
       let totalDemand = 0;
@@ -507,9 +514,9 @@ export class FinancialEngine {
         const personAssignments = await this.dataSource.query(
           `SELECT start_date, end_date, minutes_per_day
            FROM assignments
-           WHERE account_id = $1 AND person_id = $2
-             AND start_date <= $4 AND end_date >= $3`,
-          [accountId, personId, p.startDate, p.endDate],
+           WHERE account_id = ? AND person_id = ?
+             AND start_date <= ? AND end_date >= ?`,
+          [accountId, personId, p.endDate, p.startDate],
         );
 
         let personDemand = 0;
