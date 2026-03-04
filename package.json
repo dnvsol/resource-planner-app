@@ -1,0 +1,31 @@
+{
+  "name": "dnvsol",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -n shared,api,worker,web -c blue,green,yellow,magenta \"npm run dev -w packages/shared\" \"npm run dev -w apps/api\" \"npm run dev -w apps/worker\" \"npm run dev -w apps/web\"",
+    "build": "npm run build -w packages/shared && npm run build -w apps/api && npm run build -w apps/worker && npm run build -w apps/web",
+    "lint": "eslint . --ext .ts,.tsx",
+    "typecheck": "tsc --noEmit -p tsconfig.base.json",
+    "db:migrate": "npm run db:migrate -w apps/api",
+    "db:seed": "npm run db:seed -w apps/api",
+    "db:migration:generate": "npm run db:migration:generate -w apps/api",
+    "db:migration:create": "npm run db:migration:create -w apps/api",
+    "db:migration:revert": "npm run db:migration:revert -w apps/api",
+    "start": "pm2 start ecosystem.config.cjs",
+    "stop": "pm2 stop ecosystem.config.cjs"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "concurrently": "^8.2.0",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "prettier": "^3.2.0",
+    "typescript": "^5.4.0"
+  }
+}
