@@ -11,17 +11,17 @@
 
 | Section | Features | Match | Partial | Gap | Skip |
 |---------|----------|-------|---------|-----|------|
-| 1. Page Layout & Header | 10 | 4 | 2 | 4 | 0 |
-| 2. Date Range & Period Controls | 10 | 2 | 3 | 5 | 0 |
+| 1. Page Layout & Header | 10 | 6 | 2 | 2 | 0 |
+| 2. Date Range & Period Controls | 10 | 4 | 3 | 3 | 0 |
 | 3. Display Settings | 6 | 0 | 0 | 6 | 0 |
 | 4. Total Utilization (Gauge Charts) | 16 | 7 | 5 | 4 | 0 |
-| 5. Utilization Bands (Stacked Bar) | 14 | 3 | 4 | 7 | 0 |
-| 6. Utilization Summary | 12 | 6 | 3 | 3 | 0 |
-| 7. Utilization Over Time (Area Chart) | 10 | 2 | 3 | 5 | 0 |
+| 5. Utilization Bands (Stacked Bar) | 14 | 6 | 2 | 6 | 0 |
+| 6. Utilization Summary | 12 | 10 | 0 | 2 | 0 |
+| 7. Utilization Over Time (Area Chart) | 10 | 3 | 4 | 3 | 0 |
 | 8. Insights Presets (Sidebar) | 6 | 1 | 0 | 3 | 2 |
-| 9. Per-Section Controls | 10 | 0 | 2 | 8 | 0 |
+| 9. Per-Section Controls | 10 | 1 | 2 | 7 | 0 |
 | 10. Export & Download | 4 | 0 | 0 | 4 | 0 |
-| **TOTAL** | **98** | **25 (26%)** | **22 (22%)** | **49 (50%)** | **2 (2%)** |
+| **TOTAL** | **98** | **38 (39%)** | **18 (18%)** | **40 (41%)** | **2 (2%)** |
 
 ---
 
@@ -32,10 +32,10 @@
 | 1 | Page title "Utilization" | Yes, with hamburger menu icon | "Utilization" via PageHeader | ✅ Match | |
 | 2 | Top navigation "Insights" link with active state | Yes, underline active state | Yes, TopNav with active route | ✅ Match | |
 | 3 | Hamburger menu (left of title) | Opens sidebar with Presets list | None | 🔴 Gap | No sidebar navigation |
-| 4 | Full-width layout (no max-width constraint) | Full browser width, cards stretch | max-w-6xl centered | 🟡 Partial | DNVSol constrains width |
+| 4 | Full-width layout (no max-width constraint) | Full browser width, cards stretch | Full-width, no max-width | ✅ Match | Fixed: removed max-w-6xl |
 | 5 | White card sections with border + shadow | Rounded cards with subtle shadow | Rounded cards with border + shadow | ✅ Match | Very similar styling |
 | 6 | Section spacing (vertical gap between cards) | Consistent padding between sections | mb-8 between sections | ✅ Match | |
-| 7 | Sticky header bar (title + controls) | Title bar stays fixed on scroll | Not sticky | 🔴 Gap | Header scrolls with page |
+| 7 | Sticky header bar (title + controls) | Title bar stays fixed on scroll | Sticky top-0 z-10 header | ✅ Match | Fixed: added sticky positioning |
 | 8 | Display button (top-right) | "Display" button with settings icon | None | 🔴 Gap | See section 3 |
 | 9 | Date range picker (top-right) | "01 Mar 2026 - 31 May 2026 by Months" | Date range shown as text | 🟡 Partial | DNVSol shows range but different picker |
 | 10 | URL routing for insight presets | `/insights` with preset in sidebar | `/insights` single page | 🔴 Gap | No preset switching via URL |
@@ -45,9 +45,9 @@
 | # | Feature | Runn | DNVSol | Status | Notes |
 |---|---------|------|--------|--------|-------|
 | 11 | Date range picker popover | Period toggle + Start/End date inputs + Cancel/Apply | Preset buttons (This Month/Quarter/Next Quarter) | 🟡 Partial | Different approach — DNVSol uses presets |
-| 12 | Period toggle: Weeks / Months | Two-button toggle (Weeks selected / Months selected) | Hardcoded as "month" in hook | 🟡 Partial | Backend supports week/month/quarter but no UI toggle |
-| 13 | Start Date input field | Date input "1 Mar 2026" | Calculated from preset, not editable | 🔴 Gap | No custom date entry |
-| 14 | End Date input field | Date input "31 May 2026" | Calculated from preset, not editable | 🔴 Gap | No custom date entry |
+| 12 | Period toggle: Weeks / Months | Two-button toggle (Weeks selected / Months selected) | Two-button toggle (Weeks/Months) | ✅ Match | Fixed: added period toggle wired to useCapacity |
+| 13 | Start Date input field | Date input "1 Mar 2026" | Date input field (editable) | ✅ Match | Fixed: added custom date input |
+| 14 | End Date input field | Date input "31 May 2026" | Date input field (editable) | ✅ Match | Fixed: added custom date input |
 | 15 | Maximum 6 months limit | "Maximum limit of 6 months" warning text | No limit enforced | 🔴 Gap | |
 | 16 | Cancel/Apply buttons | Cancel reverts, Apply commits changes | Instant on preset click | 🟡 Partial | DNVSol applies immediately |
 | 17 | Date range display in header | "01 Mar 2026 - 31 May 2026 by Months" formatted | "03 Mar 2026 - 31 Mar 2026 by Months" formatted | ✅ Match | Both show formatted range |
@@ -71,7 +71,7 @@
 | # | Feature | Runn | DNVSol | Status | Notes |
 |---|---------|------|--------|--------|-------|
 | 27 | Section title "Total Utilization" | Yes with description subtitle | "Total Utilization" | ✅ Match | |
-| 28 | Section description text | "Aggregate workforce utilization (including placeholder future demand)..." | None | 🔴 Gap | No subtitle |
+| 28 | Section description text | "Aggregate workforce utilization (including placeholder future demand)..." | "Aggregate workforce utilization for the selected date range" | ✅ Match | Fixed: added description text |
 | 29 | People count badge | "People (All 21)" button | "People (All {count})" badge | ✅ Match | |
 | 30 | Placeholders count badge | "Placeholders (All 0)" alongside People | None | 🔴 Gap | No placeholder concept |
 | 31 | People/Placeholders filter button | Clickable button (presumably opens filter) | Non-interactive badge | 🔴 Gap | No filtering |
@@ -91,12 +91,12 @@
 
 | # | Feature | Runn | DNVSol | Status | Notes |
 |---|---------|------|--------|--------|-------|
-| 43 | Section title "Utilization Bands" | Yes with description | "Utilization Distribution ({count} people)" | 🟡 Partial | Different title, DNVSol counts people |
-| 44 | Section description | "Distribution of FTE across utilisation bands over time" | None | 🔴 Gap | |
+| 43 | Section title "Utilization Bands" | Yes with description | "Utilization Bands (N people)" | ✅ Match | Fixed: renamed to match Runn |
+| 44 | Section description | "Distribution of FTE across utilisation bands over time" | "Distribution of people across utilization bands" | ✅ Match | Fixed: added description |
 | 45 | Chart type: Stacked bar over time | Stacked bar chart by month (Mar '26, Apr '26, May '26) with colored bands | Single bar chart (all bands side-by-side, no time axis) | 🟡 Partial | DNVSol shows distribution but not over time |
 | 46 | Y-axis: FTE count | "FTE" label, shows 0-25 scale | People count (no FTE label) | 🟡 Partial | Similar data, different unit |
 | 47 | X-axis: Time periods (months) | "Mar '26", "Apr '26", "May '26" | Band labels ("0-19%", "20-39%", etc.) | 🔴 Gap | DNVSol X-axis is band names, not time |
-| 48 | 9 utilization band colors | 9 bands stacked: 0-19% through 161%+ | 8 bands with matching color palette | 🟡 Partial | Runn has 9 bands (splits 80-100%), DNVSol has 8 |
+| 48 | 9 utilization band colors | 9 bands stacked: 0-19% through 161%+ | 9 bands: 0-19% through 161%+ | ✅ Match | Fixed: split 80-100% into 80-89% and 90-100% |
 | 49 | "Total Utilization" dropdown filter | Dropdown with arrow, selects utilization type | None | 🔴 Gap | |
 | 50 | People filter button | "People (All 21)" clickable | None | 🔴 Gap | |
 | 51 | Tentative Workload toggle | Toggle switch per section | None | 🔴 Gap | |
@@ -111,24 +111,24 @@
 | # | Feature | Runn | DNVSol | Status | Notes |
 |---|---------|------|--------|--------|-------|
 | 57 | Section title "Utilization Summary" | Yes with description | "Utilization Summary" | ✅ Match | |
-| 58 | Description text | "Average FTE in each utilization band for selected date range" | None | 🔴 Gap | |
+| 58 | Description text | "Average FTE in each utilization band for selected date range" | "People in each utilization band for the selected date range" | ✅ Match | Fixed: added description |
 | 59 | "Over Utilized" heading | Yes (h5) | "Over Utilized" card | ✅ Match | |
 | 60 | "Well Utilized" heading | Yes (h5) | "Well Utilized" card | ✅ Match | |
 | 61 | "Under Utilized" heading | Yes (h5) | "Under Utilized" card | ✅ Match | |
-| 62 | Over Utilized sub-bands (4 rows) | Over 161%, 141-160%, 121-140%, 101-120% with FTE values | Single count "> 100%" | 🟡 Partial | DNVSol combines into one number |
-| 63 | Well Utilized sub-bands | 80-100% with FTE value | Single count "60% - 100%" | 🟡 Partial | Different range (Runn 80-100%, DNVSol 60-100%) |
-| 64 | Under Utilized sub-bands (4 rows) | 60-79%, 40-59%, 20-39%, 0-19% with FTE values | Single count "< 60%" | 🟡 Partial | DNVSol combines into one number |
+| 62 | Over Utilized sub-bands (4 rows) | Over 161%, 141-160%, 121-140%, 101-120% with FTE values | Over 161%, 141-160%, 121-140%, 101-120% with counts | ✅ Match | Fixed: 4 sub-band rows with color dots |
+| 63 | Well Utilized sub-bands | 80-100% with FTE value | 90-100%, 80-89% with counts | ✅ Match | Fixed: 2 sub-band rows |
+| 64 | Under Utilized sub-bands (4 rows) | 60-79%, 40-59%, 20-39%, 0-19% with FTE values | 60-79%, 40-59%, 20-39%, 0-19% with counts | ✅ Match | Fixed: 4 sub-band rows with color dots |
 | 65 | FTE values (decimal) | "4.3", "12.7", "1.3", "0.3" etc. | Integer headcount (e.g., "3", "15", "3") | 🔴 Gap | DNVSol counts people, Runn shows average FTE |
 | 66 | Color-coded row bars | Colored left-edge bars per band | Colored background cards | ✅ Match | Both use color coding |
 | 67 | 3-column layout | Over/Well/Under in 3 columns | 3 cards in grid-cols-3 | ✅ Match | |
-| 68 | Position: below Utilization Bands chart | Inside the same card section | Separate card section | 🔴 Gap | Runn integrates with bands chart |
+| 68 | Position: below Utilization Bands chart | Inside the same card section | Integrated below Bands chart in same card | ✅ Match | Fixed: summary now inside Bands card |
 
 ## 7. Utilization Over Time (Area Chart)
 
 | # | Feature | Runn | DNVSol | Status | Notes |
 |---|---------|------|--------|--------|-------|
-| 69 | Section title "Utilization" | "Utilization" with description | "Capacity vs Demand (hours)" | 🔴 Gap | Completely different chart concept |
-| 70 | Description text | "Utilization of people and placeholders over time" | None | 🔴 Gap | |
+| 69 | Section title "Utilization" | "Utilization" with description | "Utilization Over Time" | ✅ Match | Fixed: added dedicated utilization chart section |
+| 70 | Description text | "Utilization of people and placeholders over time" | "Total utilization percentage over time" | 🟡 Partial | Has description, slightly different wording |
 | 71 | Chart type: Stacked area chart | Area chart showing Billable + Non-billable % over time | Area chart showing Capacity vs Demand hours | 🟡 Partial | Both are area charts but different data |
 | 72 | Y-axis: Percentage (%) | 0% - 150% scale | Hours scale | 🟡 Partial | Different Y-axis unit |
 | 73 | X-axis: Time periods | "Mar '26", "Apr '26", "May '26" | "2026-03" period format | ✅ Match | Both show time periods |
@@ -162,7 +162,7 @@
 | 91 | Download icon per section | Download icon on Bands and Utilization sections | Non-functional download icon on Bands | 🟡 Partial | Icon exists but not wired |
 | 92 | Section-level filter independence | Each section can have different People/Tentative filters | All sections share same date range | 🔴 Gap | |
 | 93 | Interactive legend on charts | Billable/Non-billable toggle switches in legend | Default non-interactive Recharts legend | 🟡 Partial | |
-| 94 | Chart series 9 bands vs 8 | 9 series in Bands chart (accessibility: "9 series") | 8 bands | 🔴 Gap | Runn splits 80-100% into sub-bands |
+| 94 | Chart series 9 bands vs 8 | 9 series in Bands chart (accessibility: "9 series") | 9 bands | ✅ Match | Fixed: now has 9 bands matching Runn |
 
 ## 10. Export & Download
 
