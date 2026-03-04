@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ProjectsPlannerView } from './ProjectsPlannerView';
 import {
@@ -550,6 +550,20 @@ export function PlannerPage() {
   const [expandedPersons, setExpandedPersons] = useState<Set<string>>(new Set());
   const [showWeekends, setShowWeekends] = useState(false);
   const [showPeriodMenu, setShowPeriodMenu] = useState(false);
+  const [containerWidth, setContainerWidth] = useState(0);
+  const timelineContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = timelineContainerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setContainerWidth(entry.contentRect.width);
+      }
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   const periodCfg = PERIODS.find((p) => p.key === period)!;
   const numDays = periodCfg.days;
@@ -677,7 +691,11 @@ export function PlannerPage() {
     return cols;
   }, [startDate, numDays, periodCfg.granularity, showWeekends]);
 
-  const colWidth = periodCfg.granularity === 'week' ? WEEK_WIDTH : DAY_WIDTH;
+  // Dynamic column width: stretch to fill container, with minimum sizes
+  const minColWidth = periodCfg.granularity === 'week' ? WEEK_WIDTH : DAY_WIDTH;
+  const colWidth = columns.length > 0 && containerWidth > 0
+    ? Math.max(containerWidth / columns.length, minColWidth)
+    : minColWidth;
   const timelineWidth = columns.length * colWidth;
 
   const monthSpans = useMemo(() => buildMonthSpans(columns), [columns]);
@@ -1088,7 +1106,7 @@ export function PlannerPage() {
           </div>
 
           {/* ─── Right: Timeline ─── */}
-          <div className="flex flex-1 flex-col overflow-hidden">
+          <div ref={timelineContainerRef} className="flex flex-1 flex-col overflow-hidden">
             {/* Timeline header (months + column labels) */}
             <div
               ref={timelineHeaderRef}
