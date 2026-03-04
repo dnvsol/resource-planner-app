@@ -37,6 +37,7 @@ import clsx from 'clsx';
 // Constants
 // ---------------------------------------------------------------------------
 
+const DAY_WIDTH = 40;
 const WEEK_WIDTH = 48;
 const LEFT_PANEL_WIDTH = 300;
 const ROW_HEIGHT = 64;
@@ -87,30 +88,32 @@ function formatISO(d: Date): string {
 }
 
 // ---------------------------------------------------------------------------
-// Week / Month types
+// Column / Availability types
 // ---------------------------------------------------------------------------
 
-interface WeekInfo {
-  start: Date;
-  end: Date;
-  label: string; // day of month
-  month: string;
-  year: number;
+interface ColumnInfo {
+  date: Date;
+  label: string;
+  isWeekend: boolean;
+  isToday: boolean;
+  monthLabel: string | null;
+  spanDays: number; // 1 for day columns, 7 for week columns
 }
 
-interface MonthHeader {
-  label: string;
+interface AvailGroup {
   startIdx: number;
   span: number;
 }
 
-interface WeekAvail {
-  capacity: number;
-  allocated: number;
-  diff: number;
+interface WeekInfo {
+  start: Date;
+  end: Date;
+  label: string;
+  month: string;
+  year: number;
 }
 
-interface MonthAvail {
+interface AvailData {
   capacity: number;
   allocated: number;
   diff: number;
@@ -118,11 +121,118 @@ interface MonthAvail {
 
 type AvailStatus = 'full' | 'over' | 'free' | 'empty';
 
+function isWeekend(d: Date): boolean {
+  const dow = d.getDay();
+  return dow === 0 || dow === 6;
+}
+
 // ---------------------------------------------------------------------------
-// Generation helpers
+// Column generation helpers
 // ---------------------------------------------------------------------------
 
-function generateWeeks(from: Date, to: Date): WeekInfo[] {
+function generateDayColumns(from: Date, numDays: number): ColumnInfo[] {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const cols: ColumnInfo[] = [];
+  let lastMonth = -1;
+
+  for (let i = 0; i < numDays; i++) {
+    const d = addDays(from, i);
+    const month = d.getMonth();
+    const isFirst = month !== lastMonth;
+    lastMonth = month;
+
+    cols.push({
+      date: d,
+      label: String(d.getDate()),
+      isWeekend: isWeekend(d),
+      isToday: d.getTime() === today.getTime(),
+      monthLabel: isFirst ? `${MONTHS[month]} '${String(d.getFullYear()).slice(2)}` : null,
+      spanDays: 1,
+    });
+  }
+  return cols;
+}
+
+function generateWeekColumns(from: Date, numDays: number): ColumnInfo[] {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const cols: ColumnInfo[] = [];
+  let lastMonth = -1;
+  let d = new Date(from);
+
+  while (daysBetween(from, d) < numDays) {
+    const monday = getMonday(d);
+    const month = monday.getMonth();
+    const isFirst = month !== lastMonth;
+    lastMonth = month;
+
+    const weekEnd = addDays(monday, 6);
+    const todayInWeek = today >= monday && today <= weekEnd;
+
+    cols.push({
+      date: monday,
+      label: String(monday.getDate()),
+      isWeekend: false,
+      isToday: todayInWeek,
+      monthLabel: isFirst ? `${MONTHS[month]} '${String(monday.getFullYear()).slice(2)}` : null,
+      spanDays: 7,
+    });
+
+    d = addDays(monday, 7);
+  }
+  return cols;
+}
+
+/** Build month header spans from columns */
+function buildMonthSpans(columns: ColumnInfo[]): { label: string; startIdx: number; count: number }[] {
+  const spans: { label: string; startIdx: number; count: number }[] = [];
+  for (let i = 0; i < columns.length; i++) {
+    if (columns[i].monthLabel) {
+      spans.push({ label: columns[i].monthLabel!, startIdx: i, count: 1 });
+    } else if (spans.length > 0) {
+      spans[spans.length - 1].count++;
+    }
+  }
+  return spans;
+}
+
+/** Build availability bar groups: per-week for day granularity, per-month for week granularity */
+function buildAvailGroups(columns: ColumnInfo[], granularity: 'day' | 'week'): AvailGroup[] {
+  if (granularity === 'week') {
+    // Group by month
+    const groups: AvailGroup[] = [];
+    let currentLabel = '';
+    for (let i = 0; i < columns.length; i++) {
+      const mKey = `${columns[i].date.getFullYear()}-${columns[i].date.getMonth()}`;
+      if (mKey !== currentLabel) {
+        groups.push({ startIdx: i, span: 1 });
+        currentLabel = mKey;
+      } else {
+        groups[groups.length - 1].span++;
+      }
+    }
+    return groups;
+  }
+  // Day granularity: group by ISO week (Mon-Sun)
+  const groups: AvailGroup[] = [];
+  let currentWeekKey = '';
+  for (let i = 0; i < columns.length; i++) {
+    const col = columns[i];
+    const monday = getMonday(col.date);
+    const weekKey = formatISO(monday);
+    if (weekKey !== currentWeekKey) {
+      groups.push({ startIdx: i, span: 1 });
+      currentWeekKey = weekKey;
+    } else {
+      groups[groups.length - 1].span++;
+    }
+  }
+  return groups;
+}
+
+/** Convert old-style generateWeeks for availability calculation */
+function generateWeeksForAvail(from: Date, to: Date): WeekInfo[] {
   const weeks: WeekInfo[] = [];
   let current = getMonday(from);
   while (current < to) {
@@ -139,20 +249,6 @@ function generateWeeks(from: Date, to: Date): WeekInfo[] {
   return weeks;
 }
 
-function buildMonthHeaders(weeks: WeekInfo[]): MonthHeader[] {
-  const headers: MonthHeader[] = [];
-  for (let i = 0; i < weeks.length; i++) {
-    const key = `${weeks[i].month} '${String(weeks[i].year).slice(2)}`;
-    const last = headers[headers.length - 1];
-    if (last && last.label === key) {
-      last.span++;
-    } else {
-      headers.push({ label: key, startIdx: i, span: 1 });
-    }
-  }
-  return headers;
-}
-
 // ---------------------------------------------------------------------------
 // Weekly availability calculation
 // ---------------------------------------------------------------------------
@@ -161,7 +257,7 @@ function calcPersonWeekAvail(
   personId: string,
   weeks: WeekInfo[],
   assignments: Assignment[],
-): WeekAvail[] {
+): AvailData[] {
   const pa = assignments.filter((a) => a.personId === personId);
   return weeks.map((week) => {
     let allocated = 0;
@@ -186,43 +282,58 @@ function calcPersonWeekAvail(
 }
 
 // ---------------------------------------------------------------------------
-// Monthly aggregation
+// Availability aggregation (group-based: per-week or per-month)
 // ---------------------------------------------------------------------------
 
-function aggregateMonthly(
-  weekAvails: WeekAvail[],
-  mHeaders: MonthHeader[],
-): MonthAvail[] {
-  return mHeaders.map((mh) => {
+/**
+ * Map each AvailGroup to an AvailData by looking up the corresponding week
+ * from the weekAvails array. For week-granularity groups (per-month),
+ * multiple weeks are summed. For day-granularity groups (per-week),
+ * each group maps to exactly one week.
+ */
+function aggregateGroupAvail(
+  weekAvails: AvailData[],
+  groups: AvailGroup[],
+  columns: ColumnInfo[],
+  allWeeks: WeekInfo[],
+): AvailData[] {
+  return groups.map((g) => {
+    // Determine which weeks this group spans
+    const groupStart = columns[g.startIdx]?.date;
+    const lastColIdx = Math.min(g.startIdx + g.span - 1, columns.length - 1);
+    const groupEnd = columns[lastColIdx]?.date;
+    if (!groupStart || !groupEnd) return { capacity: 0, allocated: 0, diff: 0 };
+
     let capacity = 0;
     let allocated = 0;
-    for (let wi = mh.startIdx; wi < mh.startIdx + mh.span; wi++) {
-      if (weekAvails[wi]) {
-        capacity += weekAvails[wi].capacity;
-        allocated += weekAvails[wi].allocated;
+    for (let wi = 0; wi < allWeeks.length; wi++) {
+      const weekStart = allWeeks[wi].start;
+      const weekEnd = allWeeks[wi].end;
+      // Check if this week overlaps with the group date range
+      if (weekEnd >= groupStart && weekStart <= groupEnd) {
+        if (weekAvails[wi]) {
+          capacity += weekAvails[wi].capacity;
+          allocated += weekAvails[wi].allocated;
+        }
       }
     }
     return { capacity, allocated, diff: capacity - allocated };
   });
 }
 
-// ---------------------------------------------------------------------------
-// Team monthly aggregation
-// ---------------------------------------------------------------------------
-
-function calcTeamMonthlyAvail(
+function calcTeamGroupAvail(
   personIds: string[],
-  mHeaders: MonthHeader[],
-  allPersonMonthly: Map<string, MonthAvail[]>,
-): MonthAvail[] {
-  return mHeaders.map((_, mi) => {
+  groups: AvailGroup[],
+  allPersonGroupAvails: Map<string, AvailData[]>,
+): AvailData[] {
+  return groups.map((_, gi) => {
     let capacity = 0;
     let allocated = 0;
     for (const pid of personIds) {
-      const pm = allPersonMonthly.get(pid);
-      if (pm && pm[mi]) {
-        capacity += pm[mi].capacity;
-        allocated += pm[mi].allocated;
+      const pm = allPersonGroupAvails.get(pid);
+      if (pm && pm[gi]) {
+        capacity += pm[gi].capacity;
+        allocated += pm[gi].allocated;
       }
     }
     return { capacity, allocated, diff: capacity - allocated };
@@ -248,14 +359,14 @@ function formatMinutesPerDay(minutes: number): string {
   return `${h}h ${m}m/day`;
 }
 
-function getAvailStatus(ma: MonthAvail): AvailStatus {
+function getAvailStatus(ma: AvailData): AvailStatus {
   if (ma.allocated === 0 && ma.capacity === 0) return 'empty';
   if (Math.abs(ma.diff) < 30 && ma.allocated > 0) return 'full';
   if (ma.diff < 0) return 'over';
   return 'free';
 }
 
-function getAvailLabel(ma: MonthAvail): string {
+function getAvailLabel(ma: AvailData): string {
   const status = getAvailStatus(ma);
   if (status === 'empty') return '';
   if (status === 'full') return 'Full';
@@ -275,13 +386,14 @@ function getInitials(firstName: string, lastName: string): string {
 // Period / Sort options
 // ---------------------------------------------------------------------------
 
-type PeriodKey = 'month' | 'quarter' | 'half' | 'year';
+type PeriodKey = 'week' | 'month' | 'quarter' | 'half' | 'year';
 
-const PERIODS: { key: PeriodKey; label: string; weeks: number }[] = [
-  { key: 'month', label: 'Month', weeks: 5 },
-  { key: 'quarter', label: 'Quarter', weeks: 13 },
-  { key: 'half', label: 'Half Year', weeks: 26 },
-  { key: 'year', label: 'Year', weeks: 52 },
+const PERIODS: { key: PeriodKey; label: string; days: number; granularity: 'day' | 'week' }[] = [
+  { key: 'week',    label: 'Week',      days: 7,   granularity: 'day' },
+  { key: 'month',   label: 'Month',     days: 35,  granularity: 'day' },
+  { key: 'quarter', label: 'Quarter',   days: 91,  granularity: 'day' },
+  { key: 'half',    label: 'Half Year', days: 182, granularity: 'week' },
+  { key: 'year',    label: 'Year',      days: 365, granularity: 'week' },
 ];
 
 type SortKey = 'firstName' | 'lastName';
@@ -330,7 +442,7 @@ function AvailBar({
   barHeight,
   isTeam,
 }: {
-  avail: MonthAvail;
+  avail: AvailData;
   barWidth: number;
   barHeight: number;
   isTeam?: boolean;
@@ -436,10 +548,12 @@ export function PlannerPage() {
   const [startDate, setStartDate] = useState(() => getMonday(new Date()));
   const [search] = useState('');
   const [expandedPersons, setExpandedPersons] = useState<Set<string>>(new Set());
+  const [showWeekends, setShowWeekends] = useState(true);
+  const [showPeriodMenu, setShowPeriodMenu] = useState(false);
 
   const periodCfg = PERIODS.find((p) => p.key === period)!;
-  const totalWeeks = periodCfg.weeks;
-  const endDate = addDays(startDate, totalWeeks * 7);
+  const numDays = periodCfg.days;
+  const endDate = addDays(startDate, numDays);
 
   // Data
   const { data: peopleData } = usePeople();
@@ -549,32 +663,50 @@ export function PlannerPage() {
     return groups;
   }, [filteredPeople, teams]);
 
-  // Weeks & months
-  const weeks = useMemo(() => generateWeeks(startDate, endDate), [startDate, endDate]);
-  const mHeaders = useMemo(() => buildMonthHeaders(weeks), [weeks]);
-  const timelineWidth = weeks.length * WEEK_WIDTH;
+  // Columns & layout
+  const columns = useMemo(() => {
+    let cols: ColumnInfo[];
+    if (periodCfg.granularity === 'week') {
+      cols = generateWeekColumns(startDate, numDays);
+    } else {
+      cols = generateDayColumns(startDate, numDays);
+    }
+    if (!showWeekends && periodCfg.granularity === 'day') {
+      cols = cols.filter((c) => !c.isWeekend);
+    }
+    return cols;
+  }, [startDate, numDays, periodCfg.granularity, showWeekends]);
+
+  const colWidth = periodCfg.granularity === 'week' ? WEEK_WIDTH : DAY_WIDTH;
+  const timelineWidth = columns.length * colWidth;
+
+  const monthSpans = useMemo(() => buildMonthSpans(columns), [columns]);
+  const availGroups = useMemo(() => buildAvailGroups(columns, periodCfg.granularity), [columns, periodCfg.granularity]);
+
+  // Weeks for availability calculation (always full weeks covering the period)
+  const availWeeks = useMemo(() => generateWeeksForAvail(startDate, endDate), [startDate, endDate]);
 
   // Per-person weekly availability
   const personWeekAvailMap = useMemo(() => {
-    const map = new Map<string, WeekAvail[]>();
+    const map = new Map<string, AvailData[]>();
     for (const p of filteredPeople) {
-      map.set(p.id, calcPersonWeekAvail(p.id, weeks, assignments));
+      map.set(p.id, calcPersonWeekAvail(p.id, availWeeks, assignments));
     }
     return map;
-  }, [filteredPeople, weeks, assignments]);
+  }, [filteredPeople, availWeeks, assignments]);
 
-  // Per-person monthly availability
-  const personMonthAvailMap = useMemo(() => {
-    const map = new Map<string, MonthAvail[]>();
+  // Per-person group availability (per-week bars for day gran, per-month for week gran)
+  const personGroupAvailMap = useMemo(() => {
+    const map = new Map<string, AvailData[]>();
     for (const p of filteredPeople) {
       const weekAvails = personWeekAvailMap.get(p.id) ?? [];
-      map.set(p.id, aggregateMonthly(weekAvails, mHeaders));
+      map.set(p.id, aggregateGroupAvail(weekAvails, availGroups, columns, availWeeks));
     }
     return map;
-  }, [filteredPeople, personWeekAvailMap, mHeaders]);
+  }, [filteredPeople, personWeekAvailMap, availGroups, columns, availWeeks]);
 
   // Navigation
-  const navigateWeeks = (n: number) => setStartDate((prev) => addDays(prev, n * 7));
+  const navigateDays = (n: number) => setStartDate((prev) => addDays(prev, n));
   const goToToday = () => setStartDate(getMonday(new Date()));
 
   const toggleTeam = (teamId: string) => {
@@ -597,24 +729,39 @@ export function PlannerPage() {
 
   // Helper: pixel position for a date-range bar on the timeline
   const getBarPx = (aStart: string, aEnd: string) => {
-    const dayWidth = WEEK_WIDTH / 7;
-    const left = daysBetween(startDate, new Date(aStart)) * dayWidth;
-    const width = (daysBetween(new Date(aStart), new Date(aEnd)) + 1) * dayWidth;
+    if (periodCfg.granularity === 'week') {
+      const dayOffset = daysBetween(startDate, new Date(aStart));
+      const daySpan = daysBetween(new Date(aStart), new Date(aEnd)) + 1;
+      const left = (dayOffset / 7) * colWidth;
+      const width = (daySpan / 7) * colWidth;
+      return { left: Math.max(left, 0), width: Math.max(width, 4) };
+    }
+    if (!showWeekends) {
+      // Count only weekday columns
+      let leftCols = 0;
+      let cur = new Date(startDate);
+      const barStart = new Date(aStart);
+      while (cur < barStart) {
+        if (!isWeekend(cur)) leftCols++;
+        cur = addDays(cur, 1);
+      }
+      let widthCols = 0;
+      const barEnd = new Date(aEnd);
+      cur = new Date(barStart);
+      while (cur <= barEnd) {
+        if (!isWeekend(cur)) widthCols++;
+        cur = addDays(cur, 1);
+      }
+      return { left: Math.max(leftCols * colWidth, 0), width: Math.max(widthCols * colWidth, 4) };
+    }
+    // Day view with weekends
+    const left = daysBetween(startDate, new Date(aStart)) * colWidth;
+    const width = (daysBetween(new Date(aStart), new Date(aEnd)) + 1) * colWidth;
     return { left: Math.max(left, 0), width: Math.max(width, 4) };
   };
 
-  // Today marker
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const todayOffset = daysBetween(startDate, today);
-  const todayPx = todayOffset * (WEEK_WIDTH / 7);
-  const showTodayLine = todayPx >= 0 && todayPx <= timelineWidth;
-
-  // Which week index is "today"
-  const todayWeekIdx = weeks.findIndex((w) => {
-    const wEnd = addDays(w.start, 6);
-    return today >= w.start && today <= wEnd;
-  });
+  // Today marker — find the column containing today
+  const todayColIdx = columns.findIndex((c) => c.isToday);
 
   // Scroll sync refs
   const timelineHeaderRef = useRef<HTMLDivElement>(null);
@@ -684,13 +831,13 @@ export function PlannerPage() {
           {/* Right navigation */}
           <div className="flex items-center gap-1">
             <button
-              onClick={() => navigateWeeks(-totalWeeks)}
+              onClick={() => navigateDays(-numDays)}
               className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
             >
               <ChevronsLeft className="h-4 w-4" />
             </button>
             <button
-              onClick={() => navigateWeeks(-4)}
+              onClick={() => navigateDays(-7)}
               className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
             >
               <ChevronLeft className="h-4 w-4" />
@@ -702,28 +849,59 @@ export function PlannerPage() {
               Today
             </button>
             <button
-              onClick={() => navigateWeeks(4)}
+              onClick={() => navigateDays(7)}
               className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
             >
               <ChevronRight className="h-4 w-4" />
             </button>
             <button
-              onClick={() => navigateWeeks(totalWeeks)}
+              onClick={() => navigateDays(numDays)}
               className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
             >
               <ChevronsRight className="h-4 w-4" />
             </button>
-            <select
-              value={period}
-              onChange={(e) => setPeriod(e.target.value as PeriodKey)}
-              className="ml-2 cursor-pointer rounded border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 focus:outline-none"
-            >
-              {PERIODS.map((p) => (
-                <option key={p.key} value={p.key}>
-                  {p.label}
-                </option>
-              ))}
-            </select>
+            {/* Period selector dropdown */}
+            <div className="relative ml-2">
+              <button
+                onClick={() => setShowPeriodMenu(!showPeriodMenu)}
+                className="flex items-center gap-1.5 rounded-md border border-gray-300 px-3 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
+              >
+                {periodCfg.label}
+                <ChevronDown className="h-3 w-3" />
+              </button>
+              {showPeriodMenu && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setShowPeriodMenu(false)} />
+                  <div className="absolute right-0 top-full z-50 mt-1 min-w-[180px] rounded-lg border border-gray-200 bg-white py-1 shadow-lg">
+                    {PERIODS.map((p) => (
+                      <button
+                        key={p.key}
+                        onClick={() => { setPeriod(p.key); setShowPeriodMenu(false); }}
+                        className={clsx(
+                          'block w-full px-3 py-1.5 text-left text-sm',
+                          period === p.key ? 'bg-indigo-50 font-medium text-indigo-700' : 'text-gray-700 hover:bg-gray-50',
+                        )}
+                      >
+                        {p.label}
+                      </button>
+                    ))}
+                    <div className="my-1 border-t border-gray-100" />
+                    <label className="flex cursor-pointer items-center gap-2 px-3 py-1.5">
+                      <input
+                        type="checkbox"
+                        checked={showWeekends}
+                        onChange={(e) => setShowWeekends(e.target.checked)}
+                        className="h-3.5 w-3.5 rounded border-gray-300 text-indigo-600"
+                        disabled={periodCfg.granularity === 'week'}
+                      />
+                      <span className={clsx('text-sm', periodCfg.granularity === 'week' ? 'text-gray-400' : 'text-gray-700')}>
+                        Show Weekends
+                      </span>
+                    </label>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
 
@@ -911,7 +1089,7 @@ export function PlannerPage() {
 
           {/* ─── Right: Timeline ─── */}
           <div className="flex flex-1 flex-col overflow-hidden">
-            {/* Timeline header (months + weeks) */}
+            {/* Timeline header (months + column labels) */}
             <div
               ref={timelineHeaderRef}
               className="overflow-hidden border-b border-gray-200"
@@ -919,39 +1097,43 @@ export function PlannerPage() {
             >
               <div style={{ width: timelineWidth }} className="relative h-full">
                 {/* Month row */}
-                <div className="flex h-7 border-b border-gray-200">
-                  {mHeaders.map((mh, i) => (
+                <div className="relative h-7 border-b border-gray-200">
+                  {monthSpans.map((ms, i) => (
                     <div
                       key={i}
-                      className="flex items-center border-r border-gray-200 px-2 text-xs font-medium text-gray-500"
-                      style={{ width: mh.span * WEEK_WIDTH }}
+                      className="absolute flex items-center px-2 text-xs font-medium text-gray-500"
+                      style={{
+                        left: ms.startIdx * colWidth,
+                        width: ms.count * colWidth,
+                        height: 28,
+                        borderRight: '1px solid #e5e7eb',
+                      }}
                     >
-                      {mh.label}
+                      {ms.label}
                     </div>
                   ))}
                 </div>
-                {/* Week numbers row */}
+                {/* Column labels row */}
                 <div className="flex h-7">
-                  {weeks.map((w, i) => {
-                    // Is this the first week of a month?
-                    const isMonthStart = mHeaders.some(
-                      (mh) => mh.startIdx === i,
-                    );
+                  {columns.map((col, i) => {
+                    const isMonday = col.date.getDay() === 1;
                     return (
                       <div
                         key={i}
                         className={clsx(
                           'flex items-center justify-center text-[11px]',
-                          isMonthStart && i > 0
-                            ? 'border-l border-gray-200'
-                            : 'border-l border-gray-100',
-                          todayWeekIdx === i
+                          periodCfg.granularity === 'day'
+                            ? (isMonday && i > 0 ? 'border-l border-gray-200' : 'border-l border-gray-100/60')
+                            : (col.monthLabel && i > 0 ? 'border-l border-gray-200' : 'border-l border-gray-100'),
+                          col.isToday
                             ? 'font-bold text-red-500'
-                            : 'text-gray-400',
+                            : col.isWeekend
+                              ? 'text-gray-300'
+                              : 'text-gray-400',
                         )}
-                        style={{ width: WEEK_WIDTH }}
+                        style={{ width: colWidth }}
                       >
-                        {w.label}
+                        {col.label}
                       </div>
                     );
                   })}
@@ -969,42 +1151,53 @@ export function PlannerPage() {
               }}
             >
               <div style={{ width: timelineWidth }} className="relative">
-                {/* Week column grid lines */}
+                {/* Column grid lines + weekend shading */}
                 <div className="pointer-events-none absolute inset-0">
-                  {weeks.map((_, wi) => {
-                    const isMonthStart = mHeaders.some(
-                      (mh) => mh.startIdx === wi,
-                    );
+                  {/* Weekend shading (day granularity only) */}
+                  {periodCfg.granularity === 'day' && columns.map((col, i) =>
+                    col.isWeekend ? (
+                      <div
+                        key={`we-${i}`}
+                        className="absolute bottom-0 top-0 bg-gray-50/80"
+                        style={{ left: i * colWidth, width: colWidth }}
+                      />
+                    ) : null,
+                  )}
+                  {/* Grid lines */}
+                  {columns.map((col, i) => {
+                    if (i === 0) return null;
+                    const isMonday = col.date.getDay() === 1;
+                    const strong = periodCfg.granularity === 'day'
+                      ? isMonday
+                      : !!col.monthLabel;
                     return (
                       <div
-                        key={wi}
+                        key={i}
                         className={clsx(
                           'absolute top-0 bottom-0',
-                          isMonthStart && wi > 0
-                            ? 'border-l border-gray-200'
-                            : 'border-l border-gray-100/60',
+                          strong ? 'border-l border-gray-200' : 'border-l border-gray-100/60',
                         )}
-                        style={{ left: wi * WEEK_WIDTH }}
+                        style={{ left: i * colWidth }}
                       />
                     );
                   })}
                 </div>
 
                 {/* Today line */}
-                {showTodayLine && (
+                {todayColIdx >= 0 && (
                   <div
                     className="pointer-events-none absolute top-0 bottom-0 z-10 w-px bg-red-400/60"
-                    style={{ left: todayPx }}
+                    style={{ left: todayColIdx * colWidth + colWidth / 2 }}
                   />
                 )}
 
                 {/* Groups */}
                 {groupedPeople.map((group) => {
                   const collapsed = collapsedTeams.has(group.teamId);
-                  const teamMonthly = calcTeamMonthlyAvail(
+                  const teamGroupAvails = calcTeamGroupAvail(
                     group.people.map((p) => p.id),
-                    mHeaders,
-                    personMonthAvailMap,
+                    availGroups,
+                    personGroupAvailMap,
                   );
 
                   return (
@@ -1014,14 +1207,14 @@ export function PlannerPage() {
                         className="relative border-b border-gray-200"
                         style={{ height: TEAM_ROW_HEIGHT }}
                       >
-                        {mHeaders.map((mh, mi) => {
-                          const barLeft = mh.startIdx * WEEK_WIDTH + 1;
-                          const barWidth = mh.span * WEEK_WIDTH - 2;
+                        {availGroups.map((ag, gi) => {
+                          const barLeft = ag.startIdx * colWidth + 1;
+                          const barWidth = ag.span * colWidth - 2;
                           const barTop =
                             (TEAM_ROW_HEIGHT - TEAM_BAR_HEIGHT) / 2;
                           return (
                             <div
-                              key={mi}
+                              key={gi}
                               className="absolute"
                               style={{
                                 left: barLeft,
@@ -1029,7 +1222,7 @@ export function PlannerPage() {
                               }}
                             >
                               <AvailBar
-                                avail={teamMonthly[mi]}
+                                avail={teamGroupAvails[gi]}
                                 barWidth={barWidth}
                                 barHeight={TEAM_BAR_HEIGHT}
                                 isTeam
@@ -1042,8 +1235,8 @@ export function PlannerPage() {
                       {/* Person rows */}
                       {!collapsed &&
                         group.people.map((person) => {
-                          const monthlyAvails =
-                            personMonthAvailMap.get(person.id) ?? [];
+                          const groupAvails =
+                            personGroupAvailMap.get(person.id) ?? [];
                           const isExpanded = expandedPersons.has(person.id);
                           const personProjectIds = getPersonProjectIds(person.id);
                           const personLeaves = personLeavesMap.get(person.id) ?? [];
@@ -1055,18 +1248,18 @@ export function PlannerPage() {
                                 className="relative border-b border-gray-100"
                                 style={{ height: ROW_HEIGHT }}
                               >
-                                {mHeaders.map((mh, mi) => {
-                                  const ma = monthlyAvails[mi];
+                                {availGroups.map((ag, gi) => {
+                                  const ma = groupAvails[gi];
                                   if (!ma) return null;
                                   const barLeft =
-                                    mh.startIdx * WEEK_WIDTH + 1;
+                                    ag.startIdx * colWidth + 1;
                                   const barWidth =
-                                    mh.span * WEEK_WIDTH - 2;
+                                    ag.span * colWidth - 2;
                                   const barTop =
                                     (ROW_HEIGHT - BAR_HEIGHT) / 2;
                                   return (
                                     <div
-                                      key={mi}
+                                      key={gi}
                                       className="absolute"
                                       style={{
                                         left: barLeft,
