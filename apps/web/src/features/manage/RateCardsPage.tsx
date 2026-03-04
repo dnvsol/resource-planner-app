@@ -249,6 +249,7 @@ export function RateCardsPage() {
   const [editingCard, setEditingCard] = useState<RateCard | undefined>();
   const [detailId, setDetailId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState<'active' | 'archived' | 'all'>('active');
 
   const handleSave = (data: { name: string; cardType: string; rateMode: string; isDefault: boolean }) => {
     if (editingCard) {
@@ -262,6 +263,18 @@ export function RateCardsPage() {
 
   const filtered = (rateCards ?? []).filter((rc) =>
     !search.trim() || rc.name.toLowerCase().includes(search.toLowerCase()),
+  );
+
+  const filterNode = (
+    <select
+      value={filter}
+      onChange={(e) => setFilter(e.target.value as 'active' | 'archived' | 'all')}
+      className="rounded-md border border-gray-300 px-2 py-1.5 text-sm text-gray-700"
+    >
+      <option value="active">Active</option>
+      <option value="archived">Archived</option>
+      <option value="all">All</option>
+    </select>
   );
 
   const columns: Column<RateCard>[] = [
@@ -333,6 +346,7 @@ export function RateCardsPage() {
         search={search}
         onSearchChange={setSearch}
         searchPlaceholder="Search rate cards..."
+        filterNode={filterNode}
       >
         <DataTable<RateCard>
           columns={columns}

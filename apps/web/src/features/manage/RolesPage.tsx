@@ -30,6 +30,7 @@ export function RolesPage() {
   }, [people]);
 
   const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState<'active' | 'archived' | 'all'>('active');
   const [sortCol, setSortCol] = useState('name');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [adding, setAdding] = useState(false);
@@ -140,7 +141,22 @@ export function RolesPage() {
         }
       />
 
-      <ListCard search={search} onSearchChange={setSearch} searchPlaceholder="Search roles...">
+      <ListCard
+        search={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Search roles..."
+        filterNode={
+          <select
+            value={filter}
+            onChange={(e) => setFilter(e.target.value as 'active' | 'archived' | 'all')}
+            className="rounded-md border border-gray-300 px-2 py-1.5 text-sm text-gray-700"
+          >
+            <option value="active">Active</option>
+            <option value="archived">Archived</option>
+            <option value="all">All</option>
+          </select>
+        }
+      >
         <DataTable<Role>
           columns={columns}
           data={filtered}

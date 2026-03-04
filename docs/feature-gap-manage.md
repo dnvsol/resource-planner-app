@@ -29,7 +29,7 @@
 | 16 | Row: Users with count | "Users 1 Details" | ❌ Missing | 🔴 Gap | No Users entity in DNVSol manage |
 | 17 | Row: Views with count | "Views 0 Paid plan feature" | ❌ Missing | ⚪ Skip | Paid feature |
 | 18 | "Details" button per row | Button navigates to sub-page | ✅ Card click navigates | ✅ Match | Card click instead of button |
-| 19 | Manage dropdown menu in top nav | Dropdown: People, Projects, Clients, Rate Cards, Roles, Skills, Teams, Tags, Users + Advanced | ❌ No dropdown — direct nav link to /manage | 🔴 Gap | TopNav "Manage" is single link, no dropdown |
+| 19 | Manage dropdown menu in top nav | Dropdown: People, Projects, Clients, Rate Cards, Roles, Skills, Teams, Tags, Users + Advanced | ✅ Dropdown with 9 items (People, Projects, Rate Cards, Roles, Teams, Clients, Skills, Tags, Settings) | ✅ Match | — |
 
 ---
 
@@ -231,7 +231,7 @@
 | 128 | Page icon + "Rate Cards" title + help icon | Icon + title + "?" link | ✅ PageHeader with icon + "Rate Cards" | 🟡 Partial | No help icon link |
 | 129 | "+ New Rate Card" button | Green circle + "New Rate Card" | ✅ "New Rate Card" button | ✅ Match | — |
 | 130 | Search input | "Search" placeholder | ✅ Search by name | ✅ Match | — |
-| 131 | Filter: Active dropdown | "Filter Active" combobox | ❌ No filter dropdown | 🔴 Gap | — |
+| 131 | Filter: Active dropdown | "Filter Active" combobox | ✅ Filter dropdown: Active/Archived/All | ✅ Match | — |
 | 132 | Column: NAME | Rate card name (bold for default) | ✅ Name with "default" badge | ✅ Match | — |
 | 133 | Column: DESCRIPTION | Description text | ❌ No Description column | 🔴 Gap | DNVSol shows Type + Rate Mode instead |
 | 134 | Row click → detail page | Navigate to /rate_cards/{id} | ✅ Click opens detail modal | 🟡 Partial | Modal instead of full page |
@@ -261,7 +261,7 @@
 | 146 | "Bulk Edit" button | Outlined button | ❌ Missing | 🔴 Gap | — |
 | 147 | "+ New Role" button | Green circle + "New Role" | ✅ "New Role" button, inline create | ✅ Match | — |
 | 148 | Search input | "Search" placeholder | ✅ Search by role name | ✅ Match | — |
-| 149 | Filter: Active dropdown | "Filter Active" combobox | ❌ No filter dropdown | 🔴 Gap | — |
+| 149 | Filter: Active dropdown | "Filter Active" combobox | ✅ Filter dropdown: Active/Archived/All | ✅ Match | — |
 | 150 | Column: NAME (sortable) | Name with sort arrow | ✅ Name column with sort arrow | ✅ Match | — |
 | 151 | Column: PEOPLE | Count of people with this role | ✅ People count from active contracts | ✅ Match | — |
 | 152 | Column: DEFAULT HOURLY RATE | "$0" formatted | ✅ Default Hourly Rate column | ✅ Match | — |
@@ -380,23 +380,23 @@
 
 | Category | Features | ✅ Match | 🟡 Partial | 🔴 Gap | ⚪ Skip |
 |----------|----------|----------|-----------|--------|--------|
-| 1. Manage Dashboard | 19 | 12 | 1 | 2 | 4 |
+| 1. Manage Dashboard | 19 | 13 | 1 | 1 | 4 |
 | 2. People List | 19 | 15 | 1 | 2 | 1 |
 | 3. Person Detail | 33 | 25 | 6 | 1 | 1 |
 | 4. Projects List | 15 | 14 | 1 | 0 | 0 |
 | 5. Project Detail | 21 | 18 | 2 | 1 | 0 |
 | 6. Clients | 20 | 18 | 2 | 0 | 0 |
-| 7. Rate Cards | 17 | 6 | 6 | 5 | 0 |
-| 8. Roles | 12 | 8 | 1 | 3 | 0 |
+| 7. Rate Cards | 17 | 7 | 6 | 4 | 0 |
+| 8. Roles | 12 | 9 | 1 | 2 | 0 |
 | 9. Teams | 8 | 6 | 1 | 1 | 0 |
 | 10. Skills | 6 | 5 | 1 | 0 | 0 |
 | 11. Tags | 5 | 5 | 0 | 0 | 0 |
 | 12. Users | 10 | 0 | 0 | 10 | 0 |
 | 13. Account Settings | 29 | 3 | 2 | 18 | 6 |
 | 14. Advanced Features | 4 | 0 | 0 | 0 | 4 |
-| **TOTAL** | **218** | **135 (62%)** | **24 (11%)** | **43 (20%)** | **16 (7%)** |
+| **TOTAL** | **218** | **138 (63%)** | **24 (11%)** | **40 (18%)** | **16 (7%)** |
 
-**Overall match rate:** 62% full match, 73% including partial matches.
+**Overall match rate:** 63% full match, 74% including partial matches.
 
 ---
 
@@ -410,12 +410,12 @@
 
 ### P1 — Important (functional gaps)
 
-4. **Manage dropdown in top nav** (#19) — No dropdown menu for quick access to manage sub-pages
+4. ~~**Manage dropdown in top nav** (#19)~~ — ✅ **DONE** (TopNav already has MANAGE_ITEMS dropdown)
 5. ~~**Column sorting** (#38, #86, #156)~~ — ✅ **DONE** (Phase 3c Step 1)
 6. **Bulk Edit** (#21, #146) — Buttons missing on People and Roles list pages
 7. ~~**Active/Archived filter on Clients** (#111)~~ — ✅ **DONE** (Phase 3c Step 2)
-8. **Active/Archived filter on Rate Cards** (#131) — No filter dropdown
-9. **Active/Archived filter on Roles** (#149) — No filter dropdown
+8. ~~**Active/Archived filter on Rate Cards** (#131)~~ — ✅ **DONE** (Added filter dropdown)
+9. ~~**Active/Archived filter on Roles** (#149)~~ — ✅ **DONE** (Added filter dropdown)
 10. ~~**Person Snapshot KPIs** (#50–53)~~ — ✅ **DONE** (Phase 3c Step 7)
 11. ~~**People count on Roles** (#151)~~ — ✅ **DONE** (Phase 3c Step 3)
 12. ~~**Active People/Projects count on Teams** (#161–162)~~ — ✅ **DONE** (Phase 3c Step 3)
